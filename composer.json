@@ -1,0 +1,43 @@
+{
+    "name": "edulazaro/laraterms",
+    "description": "Polymorphic taxonomies for Laravel. Define tags, categories or any custom classification in config. Hierarchical, slug-aware, attach to any model, counts cached, query scopes included.",
+    "license": "MIT",
+    "type": "library",
+    "keywords": ["laravel", "taxonomy", "tags", "categories", "polymorphic", "classification", "hierarchical"],
+    "require": {
+        "php": "^8.2",
+        "laravel/framework": "^11.0|^12.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^9.0|^10.0",
+        "phpunit/phpunit": "^11.0"
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit"
+    },
+    "autoload": {
+        "psr-4": {
+            "EduLazaro\\Laraterms\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "EduLazaro\\Laraterms\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "EduLazaro\\Laraterms\\LaratermsServiceProvider"
+            ],
+            "aliases": {
+                "Laraterms": "EduLazaro\\Laraterms\\Facades\\Laraterms"
+            }
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
