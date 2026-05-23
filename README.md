@@ -1,8 +1,8 @@
 # Laraterms
 
-**Polymorphic taxonomies for Laravel.** Define `tags`, `categories` o cualquier clasificación custom en config. Multi-tenant. Multi-locale. Hierarchical o flat. Spatie-compatible. Búsqueda cross-locale via `search_text` auto-mantenido. Zero opinión de schema más allá de 2 tablas.
+**Polymorphic taxonomies for Laravel.** Define `tags`, `categories` or any custom classification in config. Multi-tenant. Multi-locale. Hierarchical or flat. Spatie-compatible. Cross-locale search via auto-maintained `search_text`. Zero schema opinion beyond two tables.
 
-## Instalación
+## Installation
 
 ```bash
 composer require edulazaro/laraterms
@@ -11,16 +11,16 @@ php artisan vendor:publish --tag=laraterms-migrations
 php artisan migrate
 ```
 
-## Define tus taxonomías
+## Define your taxonomies
 
-`config/laraterms.php` ships con `tags` y `categories` como ejemplos. Edita / añade lo que necesites:
+`config/laraterms.php` ships with `tags` and `categories` as examples. Edit or add what you need:
 
 ```php
 'taxonomies' => [
     'tags' => [
         'hierarchical'        => false,
         'max_terms_per_model' => null,
-        'scope'               => 'tenant',  // o 'global'
+        'scope'               => 'tenant',  // or 'global'
     ],
     'categories' => [
         'hierarchical'        => true,
@@ -36,7 +36,7 @@ php artisan migrate
 
 ## Multi-tenant (owner-scoped)
 
-Por defecto las taxonomías son **tenant-scoped** — cada owner (Organización, Workspace, Team) tiene SUS propios términos aislados. Define cómo resolver el owner de cualquier modelo taxable:
+By default taxonomies are **tenant-scoped**: each owner (Organization, Workspace, Team) has its own isolated terms. Define how to resolve the owner of any taxable model:
 
 ```php
 // AppServiceProvider::boot()
@@ -45,7 +45,7 @@ use EduLazaro\Laraterms\Facades\Laraterms;
 Laraterms::resolveOwnerUsing(fn ($model) => $model->organization ?? null);
 ```
 
-O por modelo:
+Or per model:
 
 ```php
 class Post extends Model
@@ -59,9 +59,9 @@ class Post extends Model
 }
 ```
 
-El owner puede ser un Model, un array `['type' => 'organization', 'id' => 5]`, un value-object `Owner`, o `null` (= global). No requiere morph map registrado — funciona con FQCN como `owner_type`.
+The owner can be a Model, an array (`['type' => 'organization', 'id' => 5]`), an `Owner` value object, or `null` (global). It does not require a morph map: it works with FQCN as `owner_type`.
 
-Para taxonomías compartidas entre todos los tenants (lenguas, países), pon `scope: 'global'`.
+For taxonomies shared across all tenants (languages, countries), set `scope: 'global'`.
 
 ## Make a model taxable
 
@@ -77,7 +77,7 @@ class Post extends Model { use HasTerms; }
 // Attach / sync / detach
 $post->attachTerm('Laravel', 'tags');                  // find-or-create
 $post->attachTerms(['Laravel', 'PHP'], 'tags');
-$post->syncTerms(['Laravel', 'Vue'], 'tags');           // replace en la taxonomía
+$post->syncTerms(['Laravel', 'Vue'], 'tags');           // replace in the taxonomy
 $post->detachTerm('Laravel', 'tags');
 $post->detachAll('tags');
 
@@ -95,27 +95,27 @@ Post::whereInTaxonomy('categories')->get();
 
 ## Multi-locale (i18n)
 
-Cada campo translatable tiene **dos columnas**: el canónico (`name`, `description`) y el de traducciones (`name_translations`, `description_translations`). Spatie-compatible (formato `{"en": "...", "es": "..."}`).
+Each translatable field has **two columns**: the canonical one (`name`, `description`) and the translations one (`name_translations`, `description_translations`). Spatie-compatible (format: `{"en": "...", "es": "..."}`).
 
 ```php
-// Single-locale — usa solo `name`
+// Single-locale: use only `name`
 Term::create(['name' => 'Laravel', 'taxonomy' => 'tags']);
 $term->name;   // "Laravel"
 
 // Multi-locale
 Term::create([
-    'name'              => 'Tag',                       // fallback canónico
+    'name'              => 'Tag',                       // canonical fallback
     'name_translations' => ['en' => 'Tag', 'es' => 'Etiqueta'],
     'taxonomy'          => 'tags',
 ]);
-$term->name;   // "Etiqueta" si locale=es, "Tag" si locale=en o fallback
+$term->name;   // "Etiqueta" if locale=es, "Tag" if locale=en or fallback
 ```
 
-El accessor de `name` y `description` resuelve automáticamente: locale activo → fallback locale → columna canónica.
+The accessor on `name` and `description` resolves automatically: active locale, then fallback locale, then canonical column.
 
-### Integración con Spatie (opt-in, por tu cuenta)
+### Spatie integration (opt-in, on your side)
 
-Si quieres la API completa de Spatie sobre los campos `*_translations`:
+If you want the full Spatie API on the `*_translations` columns:
 
 ```php
 class Term extends \EduLazaro\Laraterms\Models\Term
@@ -125,16 +125,16 @@ class Term extends \EduLazaro\Laraterms\Models\Term
 }
 ```
 
-Nuestro accessor sobre `name`/`description` sigue funcionando porque lee los atributos crudos.
+Our accessor on `name`/`description` keeps working because it reads the raw attributes.
 
-## Búsqueda cross-locale
+## Cross-locale search
 
-`search_text` se mantiene automáticamente en `saving()` concatenando todos los valores de todos los locales. Búsqueda LIKE agnóstica de idioma:
+`search_text` is auto-maintained in `saving()` by concatenating all values across all locales. Language-agnostic LIKE search:
 
 ```php
-Term::search('impuesto')->get();                        // encuentra aunque el user esté en /en
+Term::search('impuesto')->get();                        // matches even if the user is on /en
 Term::where('search_text', 'like', '%laravel%')->get();
-Term::whereFullText('search_text', 'laravel')->get();   // si tu motor soporta FULLTEXT (default migration lo añade)
+Term::whereFullText('search_text', 'laravel')->get();   // if your engine supports FULLTEXT (default migration adds it)
 ```
 
 ## Hierarchical
@@ -142,18 +142,18 @@ Term::whereFullText('search_text', 'laravel')->get();   // si tu motor soporta F
 ```php
 use EduLazaro\Laraterms\Support\TermTree;
 
-$tree = TermTree::for('categories');                    // Collection de roots con children populados (1 query)
+$tree = TermTree::for('categories');                    // Collection of roots with children populated (1 query)
 
 foreach (TermTree::flatten($tree) as [$term, $depth]) {
-    echo str_repeat('— ', $depth) . $term->name . "\n";
+    echo str_repeat('. ', $depth) . $term->name . "\n";
 }
 
-$term->ancestors();                                     // Collection<Term> root → parent
-$term->breadcrumb(' › ');                               // "Tech › Web › Laravel"
-$term->descendantIds();                                 // todos los ids descendientes
+$term->ancestors();                                     // Collection<Term> root to parent
+$term->breadcrumb(' > ');                               // "Tech > Web > Laravel"
+$term->descendantIds();                                 // all descendant ids
 ```
 
-## Modelo
+## Model
 
 ```php
 $term = Term::findOrCreateByName('Laravel', 'tags', $organization);
@@ -164,42 +164,42 @@ Term::forOwnerOrGlobal($org)->inTaxonomy('tags')->get();
 $term->refreshCount();
 ```
 
-## Activar / desactivar (soft hide)
+## Activate / deactivate (soft hide)
 
-Cada término tiene `is_active` (default `true`). Desactivar = ocultar de pickers de nuevos atachamientos, pero los modelos ya atachados siguen mostrando el badge. Útil para "este tag no se usa más, pero los posts viejos que lo tienen siguen mostrándolo".
+Each term has `is_active` (default `true`). Deactivating hides the term from pickers for new attachments, but models already attached keep showing the badge. Useful for "this tag is no longer used, but old posts that have it keep showing it".
 
 ```php
-$term->deactivate();        // oculta de pickers
-$term->activate();          // re-activa
-Term::active()->inTaxonomy('tags')->forOwner($org)->get();        // solo activos
-Term::inactive()->inTaxonomy('tags')->forOwner($org)->get();      // solo inactivos
+$term->deactivate();        // hide from pickers
+$term->activate();          // re-activate
+Term::active()->inTaxonomy('tags')->forOwner($org)->get();        // only active
+Term::inactive()->inTaxonomy('tags')->forOwner($org)->get();      // only inactive
 ```
 
-**NO es soft-delete.** Si quieres SoftDeletes proper (con `withTrashed`, `restore`, etc.), extiende el modelo en tu app:
+**This is NOT soft-delete.** If you want proper SoftDeletes (with `withTrashed`, `restore`, etc.), extend the model in your app:
 
 ```php
 class Term extends \EduLazaro\Laraterms\Models\Term {
     use \Illuminate\Database\Eloquent\SoftDeletes;
 }
-// + migration con $table->softDeletes();
+// + migration with $table->softDeletes();
 ```
 
-## Fusionar términos (`mergeInto`)
+## Merge terms (`mergeInto`)
 
-Para limpieza de duplicados ("teníamos `laravel` y `Laravel Framework`, fusiónalos en `laravel`"):
+For duplicate cleanup ("we had `laravel` and `Laravel Framework`, merge them into `laravel`"):
 
 ```php
 $dup = Term::byHandle('laravel-framework', 'tags')->first();
 $canonical = Term::byHandle('laravel', 'tags')->first();
 
 $dup->mergeInto($canonical, deactivateSource: true);
-// 1. Mueve todos los termables de $dup → $canonical (sin duplicar)
-// 2. Recalcula terms_count del canonical
-// 3. Desactiva $dup (queda en BD pero oculto de pickers).
-//    Pasa deactivateSource: false para delete real con cascade.
+// 1. Moves all termables from $dup to $canonical (without duplicating)
+// 2. Recalculates terms_count on the canonical
+// 3. Deactivates $dup (kept in DB but hidden from pickers).
+//    Pass deactivateSource: false for a real delete with cascade.
 ```
 
-Guard: ambos deben ser de la misma taxonomy y mismo owner. Lanza `InvalidArgumentException` si no.
+Guard: both must belong to the same taxonomy and the same owner. Throws `InvalidArgumentException` otherwise.
 
 ## Facade
 
@@ -216,19 +216,18 @@ Laraterms::ownerFor($model);                              // Owner VO
 
 ## Schema
 
-**`terms`** — `id`, `taxonomy`, `owner_type`, `owner_id`, `parent_id`, `name`, `name_translations` (JSON), `handle`, `description`, `description_translations` (JSON), `search_text`, `color`, `sort_order`, `terms_count`, `meta` (JSON), timestamps. Único en `(owner_type, owner_id, taxonomy, handle)`. FULLTEXT en `search_text` (best-effort, ignorado si el motor no lo soporta).
+**`terms`**: `id`, `taxonomy`, `owner_type`, `owner_id`, `parent_id`, `name`, `name_translations` (JSON), `handle`, `description`, `description_translations` (JSON), `search_text`, `color`, `sort_order`, `terms_count`, `meta` (JSON), timestamps. Unique on `(owner_type, owner_id, taxonomy, handle)`. FULLTEXT on `search_text` (best-effort, ignored if the engine does not support it).
 
-**`termables`** — polymorphic pivot. `term_id`, `termable_type`, `termable_id`, `sort_order`, timestamps. Único en `(term_id, termable_type, termable_id)`.
+**`termables`**: polymorphic pivot. `term_id`, `termable_type`, `termable_id`, `sort_order`, timestamps. Unique on `(term_id, termable_type, termable_id)`.
 
-Nombres de tabla configurables.
+Table names are configurable.
 
 ## Exceptions
 
-- `UnknownTaxonomyException` — handle no registrada
-- `TooManyTermsException` — supera `max_terms_per_model`
-- `RequiresHierarchyException` — `parent_id` en taxonomía flat
+- `UnknownTaxonomyException`: taxonomy handle not registered.
+- `TooManyTermsException`: exceeds `max_terms_per_model`.
+- `RequiresHierarchyException`: `parent_id` set on a flat taxonomy.
 
 ## License
 
 MIT.
-# laraterms
