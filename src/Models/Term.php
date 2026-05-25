@@ -5,7 +5,7 @@ namespace EduLazaro\Laraterms\Models;
 use EduLazaro\Laraterms\Exceptions\RequiresHierarchyException;
 use EduLazaro\Laraterms\Facades\Laraterms;
 use EduLazaro\Laraterms\Support\HandleGenerator;
-use EduLazaro\Laraterms\Support\Owner;
+use EduLazaro\Laraterms\Support\Scope;
 use EduLazaro\Laraterms\Taxonomy\TaxonomyDefinition;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -18,8 +18,8 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 /**
  * @property int $id
  * @property string $taxonomy
- * @property string $owner_type
- * @property int $owner_id
+ * @property string $scope_type
+ * @property int $scope_id
  * @property ?int $parent_id
  * @property string $name             Plain canonical, fallback if no translation matches
  * @property ?array $name_translations  ['en' => 'Tag', 'es' => 'Etiqueta']
@@ -35,7 +35,7 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 class Term extends Model
 {
     protected $fillable = [
-        'taxonomy', 'owner_type', 'owner_id', 'parent_id',
+        'taxonomy', 'scope_type', 'scope_id', 'parent_id',
         'name', 'name_translations',
         'handle',
         'description', 'description_translations',
@@ -44,7 +44,7 @@ class Term extends Model
     ];
 
     protected $casts = [
-        'owner_id'                 => 'integer',
+        'scope_id'                 => 'integer',
         'parent_id'                => 'integer',
         'is_active'                => 'boolean',
         'sort_order'               => 'integer',
@@ -55,8 +55,8 @@ class Term extends Model
     ];
 
     protected $attributes = [
-        'owner_type' => '',
-        'owner_id'   => 0,
+        'scope_type' => '',
+        'scope_id'   => 0,
     ];
 
     public function getTable(): string
@@ -118,8 +118,8 @@ class Term extends Model
                 $term->handle = app(HandleGenerator::class)->generate(
                     sourceName: (string) $term->attributes['name'],
                     taxonomy: $term->taxonomy,
-                    ownerType: $term->owner_type ?: '',
-                    ownerId: (int) ($term->owner_id ?? 0),
+                    scopeType: $term->scope_type ?: '',
+                    scopeId: (int) ($term->scope_id ?? 0),
                     ignoreTermId: $term->exists ? $term->id : null,
                 );
             }
@@ -133,8 +133,8 @@ class Term extends Model
                 throw new RequiresHierarchyException("A term cannot be its own parent.");
             }
 
-            if ($term->owner_type === null) $term->owner_type = '';
-            if ($term->owner_id === null)   $term->owner_id = 0;
+            if ($term->scope_type === null) $term->scope_type = '';
+            if ($term->scope_id === null)   $term->scope_id = 0;
 
             // Reconstruir search_text desde todos los valores
             $term->rebuildSearchText();
@@ -196,7 +196,7 @@ class Term extends Model
         return $this->hasMany(self::class, 'parent_id')->orderBy('sort_order')->orderBy('name');
     }
 
-    public function owner(): MorphTo
+    public function scope(): MorphTo
     {
         return $this->morphTo();
     }
@@ -241,24 +241,24 @@ class Term extends Model
 
     public function scopeGlobal(Builder $q): Builder
     {
-        return $q->where('owner_type', '')->where('owner_id', 0);
+        return $q->where('scope_type', '')->where('scope_id', 0);
     }
 
-    public function scopeForOwner(Builder $q, Model|Owner|array|null $owner): Builder
+    public function scopeForScope(Builder $q, Model|Scope|array|null $scope): Builder
     {
-        $o = Owner::from($owner);
-        return $q->where('owner_type', $o->type)->where('owner_id', $o->id);
+        $s = Scope::from($scope);
+        return $q->where('scope_type', $s->type)->where('scope_id', $s->id);
     }
 
-    public function scopeForOwnerOrGlobal(Builder $q, Model|Owner|array|null $owner): Builder
+    public function scopeForScopeOrGlobal(Builder $q, Model|Scope|array|null $scope): Builder
     {
-        $o = Owner::from($owner);
-        if ($o->isGlobal()) return $q->global();
-        return $q->where(function ($qq) use ($o) {
-            $qq->where(function ($q2) use ($o) {
-                $q2->where('owner_type', $o->type)->where('owner_id', $o->id);
+        $s = Scope::from($scope);
+        if ($s->isGlobal()) return $q->global();
+        return $q->where(function ($qq) use ($s) {
+            $qq->where(function ($q2) use ($s) {
+                $q2->where('scope_type', $s->type)->where('scope_id', $s->id);
             })->orWhere(function ($q2) {
-                $q2->where('owner_type', '')->where('owner_id', 0);
+                $q2->where('scope_type', '')->where('scope_id', 0);
             });
         });
     }
@@ -293,7 +293,7 @@ class Term extends Model
 
     public function isGlobal(): bool
     {
-        return $this->owner_type === '' && (int) $this->owner_id === 0;
+        return $this->scope_type === '' && (int) $this->scope_id === 0;
     }
 
     /** @return Collection<int, Term> */
@@ -345,7 +345,7 @@ class Term extends Model
      * destino (sin duplicar), recalcula counts y opcionalmente desactiva o
      * borra el origen.
      *
-     * Guard: ambos terms deben ser de la misma taxonomy y mismo owner.
+     * Guard: ambos terms deben ser de la misma taxonomy y mismo scope.
      * Lanza InvalidArgumentException si no.
      *
      * @param self $into                       Término destino (canónico).
@@ -362,8 +362,8 @@ class Term extends Model
                 "Cannot merge terms across taxonomies ({$this->taxonomy} → {$into->taxonomy})."
             );
         }
-        if ($this->owner_type !== $into->owner_type || $this->owner_id !== $into->owner_id) {
-            throw new \InvalidArgumentException('Cannot merge terms across different owners.');
+        if ($this->scope_type !== $into->scope_type || $this->scope_id !== $into->scope_id) {
+            throw new \InvalidArgumentException('Cannot merge terms across different scopes.');
         }
 
         $tableTermables = config('laraterms.tables.termables', 'termables');
@@ -418,28 +418,28 @@ class Term extends Model
     }
 
     /**
-     * Find-or-create within (taxonomy, owner) by canonical name. Owner acepta
-     * Model, array, Owner VO o null (= global).
+     * Find-or-create within (taxonomy, scope) by canonical name. Scope acepta
+     * Model, array, Scope VO o null (= global).
      */
     public static function findOrCreateByName(
         string $name,
         string $taxonomy,
-        Model|Owner|array|null $owner = null,
+        Model|Scope|array|null $scope = null,
         ?int $parentId = null,
     ): self {
-        $o = Owner::from($owner);
+        $s = Scope::from($scope);
 
         $existing = static::where('taxonomy', $taxonomy)
-            ->where('owner_type', $o->type)
-            ->where('owner_id', $o->id)
+            ->where('scope_type', $s->type)
+            ->where('scope_id', $s->id)
             ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])
             ->first();
         if ($existing) return $existing;
 
         return static::create([
             'taxonomy'   => $taxonomy,
-            'owner_type' => $o->type,
-            'owner_id'   => $o->id,
+            'scope_type' => $s->type,
+            'scope_id'   => $s->id,
             'parent_id'  => $parentId,
             'name'       => $name,
         ]);

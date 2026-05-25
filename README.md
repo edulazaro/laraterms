@@ -34,15 +34,15 @@ php artisan migrate
 ],
 ```
 
-## Multi-tenant (owner-scoped)
+## Multi-tenant (scope-scoped)
 
-By default taxonomies are **tenant-scoped**: each owner (Organization, Workspace, Team) has its own isolated terms. Define how to resolve the owner of any taxable model:
+By default taxonomies are **tenant-scoped**: each scope (Organization, Workspace, Team) has its own isolated terms. Define how to resolve the scope of any taxable model:
 
 ```php
 // AppServiceProvider::boot()
 use EduLazaro\Laraterms\Facades\Laraterms;
 
-Laraterms::resolveOwnerUsing(fn ($model) => $model->organization ?? null);
+Laraterms::resolveScopeUsing(fn ($model) => $model->organization ?? null);
 ```
 
 Or per model:
@@ -52,14 +52,14 @@ class Post extends Model
 {
     use HasTerms;
 
-    public function termsOwner(): ?\Illuminate\Database\Eloquent\Model
+    public function termsScope(): ?\Illuminate\Database\Eloquent\Model
     {
         return $this->organization;
     }
 }
 ```
 
-The owner can be a Model, an array (`['type' => 'organization', 'id' => 5]`), an `Owner` value object, or `null` (global). It does not require a morph map: it works with FQCN as `owner_type`.
+The scope can be a Model, an array (`['type' => 'organization', 'id' => 5]`), a `Scope` value object, or `null` (global). It does not require a morph map: it works with FQCN as `scope_type`.
 
 For taxonomies shared across all tenants (languages, countries), set `scope: 'global'`.
 
@@ -159,8 +159,8 @@ $term->descendantIds();                                 // all descendant ids
 $term = Term::findOrCreateByName('Laravel', 'tags', $organization);
 Term::inTaxonomy('tags')->ordered()->get();
 Term::byHandle('laravel', 'tags')->first();
-Term::forOwner($org)->inTaxonomy('tags')->get();
-Term::forOwnerOrGlobal($org)->inTaxonomy('tags')->get();
+Term::forScope($org)->inTaxonomy('tags')->get();
+Term::forScopeOrGlobal($org)->inTaxonomy('tags')->get();
 $term->refreshCount();
 ```
 
@@ -171,8 +171,8 @@ Each term has `is_active` (default `true`). Deactivating hides the term from pic
 ```php
 $term->deactivate();        // hide from pickers
 $term->activate();          // re-activate
-Term::active()->inTaxonomy('tags')->forOwner($org)->get();        // only active
-Term::inactive()->inTaxonomy('tags')->forOwner($org)->get();      // only inactive
+Term::active()->inTaxonomy('tags')->forScope($org)->get();        // only active
+Term::inactive()->inTaxonomy('tags')->forScope($org)->get();      // only inactive
 ```
 
 **This is NOT soft-delete.** If you want proper SoftDeletes (with `withTrashed`, `restore`, etc.), extend the model in your app:
@@ -199,7 +199,7 @@ $dup->mergeInto($canonical, deactivateSource: true);
 //    Pass deactivateSource: false for a real delete with cascade.
 ```
 
-Guard: both must belong to the same taxonomy and the same owner. Throws `InvalidArgumentException` otherwise.
+Guard: both must belong to the same taxonomy and the same scope. Throws `InvalidArgumentException` otherwise.
 
 ## Facade
 
@@ -210,13 +210,13 @@ Laraterms::has('tags');
 Laraterms::get('tags');                                   // TaxonomyDefinition
 Laraterms::handles();                                     // ['tags', 'categories', ...]
 Laraterms::register('moods', [...]);                      // runtime
-Laraterms::resolveOwnerUsing(fn ($m) => $m->organization);
-Laraterms::ownerFor($model);                              // Owner VO
+Laraterms::resolveScopeUsing(fn ($m) => $m->organization);
+Laraterms::scopeFor($model);                              // Scope VO
 ```
 
 ## Schema
 
-**`terms`**: `id`, `taxonomy`, `owner_type`, `owner_id`, `parent_id`, `name`, `name_translations` (JSON), `handle`, `description`, `description_translations` (JSON), `search_text`, `color`, `sort_order`, `terms_count`, `meta` (JSON), timestamps. Unique on `(owner_type, owner_id, taxonomy, handle)`. FULLTEXT on `search_text` (best-effort, ignored if the engine does not support it).
+**`terms`**: `id`, `taxonomy`, `scope_type`, `scope_id`, `parent_id`, `name`, `name_translations` (JSON), `handle`, `description`, `description_translations` (JSON), `search_text`, `color`, `sort_order`, `terms_count`, `meta` (JSON), timestamps. Unique on `(scope_type, scope_id, taxonomy, handle)`. FULLTEXT on `search_text` (best-effort, ignored if the engine does not support it).
 
 **`termables`**: polymorphic pivot. `term_id`, `termable_type`, `termable_id`, `sort_order`, timestamps. Unique on `(term_id, termable_type, termable_id)`.
 

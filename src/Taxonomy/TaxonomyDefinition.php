@@ -20,7 +20,7 @@ final class TaxonomyDefinition
         public readonly string $sort = 'name',
         public readonly ?array $models = null,
         public readonly string $scope = self::SCOPE_TENANT,
-        public readonly ?string $ownerModel = null,
+        public readonly ?string $scopeModel = null,
     ) {}
 
     public static function fromConfig(string $handle, array $config): self
@@ -35,7 +35,7 @@ final class TaxonomyDefinition
             sort: $config['sort'] ?? 'name',
             models: $config['models'] ?? null,
             scope: $config['scope'] ?? self::SCOPE_TENANT,
-            ownerModel: $config['owner_model'] ?? null,
+            scopeModel: $config['scope_model'] ?? $config['owner_model'] ?? null,
         );
     }
 

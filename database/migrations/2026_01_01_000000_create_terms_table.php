@@ -13,10 +13,11 @@ return new class extends Migration {
             $table->id();
             $table->string('taxonomy', 64)->index();
 
-            // Polimórfico al "owner" del término (Organization, Team, etc.).
-            // Sentinela para globales: owner_type='', owner_id=0.
-            $table->string('owner_type', 64)->default('');
-            $table->unsignedBigInteger('owner_id')->default(0);
+            // Polimórfico al SCOPE del término (Organization, Team, Case, etc.).
+            // Cada combinación (scope_type, scope_id) es un catálogo aislado.
+            // Sentinela para globales: scope_type='', scope_id=0.
+            $table->string('scope_type', 64)->default('');
+            $table->unsignedBigInteger('scope_id')->default(0);
 
             $table->foreignId('parent_id')->nullable()->index();
 
@@ -26,7 +27,7 @@ return new class extends Migration {
             $table->string('name');
             $table->json('name_translations')->nullable();
 
-            // Identificador estable, único por owner+taxonomía. Reemplaza al slug.
+            // Identificador estable, único por scope+taxonomía. Reemplaza al slug.
             $table->string('handle');
 
             $table->text('description')->nullable();
@@ -44,12 +45,12 @@ return new class extends Migration {
             $table->json('meta')->nullable();
             $table->timestamps();
 
-            // Handle único por (owner, taxonomía). Cada despacho tiene su
+            // Handle único por (scope, taxonomía). Cada despacho tiene su
             // espacio de handles aislado.
-            $table->unique(['owner_type', 'owner_id', 'taxonomy', 'handle'], 'terms_unique');
+            $table->unique(['scope_type', 'scope_id', 'taxonomy', 'handle'], 'terms_unique');
 
             // Lookups frecuentes
-            $table->index(['owner_type', 'owner_id', 'taxonomy'], 'terms_owner_tax_idx');
+            $table->index(['scope_type', 'scope_id', 'taxonomy'], 'terms_scope_tax_idx');
             $table->index(['taxonomy', 'parent_id']);
         });
 

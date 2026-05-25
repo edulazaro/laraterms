@@ -5,22 +5,27 @@ namespace EduLazaro\Laraterms\Support;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Lightweight value object representing the "owner" of a Term — i.e. the
- * tenant (Organization, Team, User...) under which the term is scoped.
+ * Lightweight value object representing the SCOPE of a Term — i.e. the
+ * entity (Organization, Team, Case, User...) under which the term catalog
+ * is isolated.
  *
- * Use Owner::from(...) anywhere you want to accept flexible inputs:
+ * The scope is what makes two Terms with the same `name` different rows: a
+ * "VIP" term in scope=organization:5 is a separate record from a "VIP" term
+ * in scope=organization:6 or in scope=case:123.
+ *
+ * Use Scope::from(...) anywhere you want to accept flexible inputs:
  *
  *   - Eloquent Model           → uses getMorphClass() + getKey()
- *   - Owner instance           → returned as-is
+ *   - Scope instance           → returned as-is
  *   - array ['type' => 'organization', 'id' => 5]
  *   - array ['type' => User::class, 'id' => 42]
- *   - null                     → Owner::global()  (owner_type='', owner_id=0)
+ *   - null                     → Scope::global()  (scope_type='', scope_id=0)
  *
  * This means the package doesn't require you to load a full Eloquent Model
- * just to scope a query. If you already have the tenant id + morph alias in
+ * just to scope a query. If you already have the scope id + morph alias in
  * memory (session, request attribute, JWT claim), pass the tuple.
  */
-final class Owner
+final class Scope
 {
     public function __construct(
         public readonly string $type,
@@ -28,7 +33,7 @@ final class Owner
     ) {}
 
     /**
-     * Normalize anything the user might hand us into a canonical Owner.
+     * Normalize anything the user might hand us into a canonical Scope.
      */
     public static function from(Model|self|array|null $input): self
     {
@@ -51,8 +56,8 @@ final class Owner
         }
 
         return new self(
-            type: (string) ($input['type'] ?? $input['owner_type'] ?? ''),
-            id: (int) ($input['id'] ?? $input['owner_id'] ?? 0),
+            type: (string) ($input['type'] ?? $input['scope_type'] ?? $input['owner_type'] ?? ''),
+            id: (int) ($input['id'] ?? $input['scope_id'] ?? $input['owner_id'] ?? 0),
         );
     }
 

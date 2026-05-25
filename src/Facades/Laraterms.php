@@ -4,7 +4,7 @@ namespace EduLazaro\Laraterms\Facades;
 
 use Closure;
 use EduLazaro\Laraterms\LaratermsManager;
-use EduLazaro\Laraterms\Support\Owner;
+use EduLazaro\Laraterms\Support\Scope;
 use EduLazaro\Laraterms\Taxonomy\TaxonomyDefinition;
 use EduLazaro\Laraterms\Taxonomy\TaxonomyRegistry;
 use Illuminate\Database\Eloquent\Model;
@@ -16,9 +16,9 @@ use Illuminate\Support\Facades\Facade;
  * @method static bool has(string $handle)
  * @method static TaxonomyDefinition register(string $handle, array $config)
  * @method static list<string> handles()
- * @method static LaratermsManager resolveOwnerUsing(?Closure $resolver)
- * @method static ?Closure ownerResolver()
- * @method static Owner ownerFor(Model $model)
+ * @method static LaratermsManager resolveScopeUsing(?Closure $resolver)
+ * @method static ?Closure scopeResolver()
+ * @method static Scope scopeFor(Model $model)
  *
  * @see LaratermsManager
  */

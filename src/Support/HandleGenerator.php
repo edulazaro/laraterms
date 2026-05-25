@@ -7,7 +7,7 @@ use Illuminate\Support\Str;
 
 /**
  * Genera el `handle` único de un término dentro de su scope
- * (owner_type, owner_id, taxonomy). Sluggify con sufijo numérico ante colisión.
+ * (scope_type, scope_id, taxonomy). Sluggify con sufijo numérico ante colisión.
  */
 class HandleGenerator
 {
@@ -18,13 +18,13 @@ class HandleGenerator
     ) {}
 
     /**
-     * Genera handle a partir de $sourceName, scoped a (ownerType, ownerId, taxonomy).
+     * Genera handle a partir de $sourceName, scoped a (scopeType, scopeId, taxonomy).
      */
     public function generate(
         string $sourceName,
         string $taxonomy,
-        string $ownerType = '',
-        int $ownerId = 0,
+        string $scopeType = '',
+        int $scopeId = 0,
         ?int $ignoreTermId = null,
     ): string {
         $base = Str::slug($sourceName, $this->separator, $this->locale);
@@ -34,7 +34,7 @@ class HandleGenerator
 
         $candidate = $base;
         $i = 2;
-        while ($this->existsInScope($candidate, $taxonomy, $ownerType, $ownerId, $ignoreTermId)) {
+        while ($this->existsInScope($candidate, $taxonomy, $scopeType, $scopeId, $ignoreTermId)) {
             $candidate = $base . $this->separator . $i;
             $i++;
         }
@@ -44,14 +44,14 @@ class HandleGenerator
     private function existsInScope(
         string $handle,
         string $taxonomy,
-        string $ownerType,
-        int $ownerId,
+        string $scopeType,
+        int $scopeId,
         ?int $ignoreTermId,
     ): bool {
         $q = Term::query()
             ->where('taxonomy', $taxonomy)
-            ->where('owner_type', $ownerType)
-            ->where('owner_id', $ownerId)
+            ->where('scope_type', $scopeType)
+            ->where('scope_id', $scopeId)
             ->where('handle', $handle);
         if ($ignoreTermId !== null) $q->where('id', '!=', $ignoreTermId);
         return $q->exists();

@@ -18,20 +18,20 @@ class TermCrudTest extends TestCase
         $this->assertSame('banca', $term->handle);
     }
 
-    public function test_handles_are_unique_per_owner_and_taxonomy(): void
+    public function test_handles_are_unique_per_scope_and_taxonomy(): void
     {
         Term::create([
             'taxonomy'   => 'tags',
-            'owner_type' => 'organization',
-            'owner_id'   => 1,
+            'scope_type' => 'organization',
+            'scope_id'   => 1,
             'name'       => 'IRPH',
         ]);
 
-        // Same name in different owner: different row, same handle is fine
+        // Same name in different scope: different row, same handle is fine
         $b = Term::create([
             'taxonomy'   => 'tags',
-            'owner_type' => 'organization',
-            'owner_id'   => 2,
+            'scope_type' => 'organization',
+            'scope_id'   => 2,
             'name'       => 'IRPH',
         ]);
 

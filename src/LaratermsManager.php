@@ -3,28 +3,28 @@
 namespace EduLazaro\Laraterms;
 
 use Closure;
-use EduLazaro\Laraterms\Support\Owner;
+use EduLazaro\Laraterms\Support\Scope;
 use EduLazaro\Laraterms\Taxonomy\TaxonomyDefinition;
 use EduLazaro\Laraterms\Taxonomy\TaxonomyRegistry;
 use Illuminate\Database\Eloquent\Model;
 
 /**
  * Manager público del paquete. Holds the singleton TaxonomyRegistry and
- * exposes a global owner resolver for tenant-scoped taxonomies.
+ * exposes a global scope resolver for tenant-scoped taxonomies.
  *
  *   Laraterms::registry()->all();
  *   Laraterms::get('tags');
  *   Laraterms::has('regions');
  *   Laraterms::register('regions', [...]);
  *
- *   // Define how the package figures out the "tenant" (owner) for any model
- *   // that doesn't override termsOwner() itself:
- *   Laraterms::resolveOwnerUsing(fn (Model $m) => $m->organization ?? null);
+ *   // Define how the package figures out the "scope" for any model
+ *   // that doesn't override termsScope() itself:
+ *   Laraterms::resolveScopeUsing(fn (Model $m) => $m->organization ?? null);
  */
 class LaratermsManager
 {
     /** @var Closure|null */
-    private $ownerResolver = null;
+    private $scopeResolver = null;
 
     public function __construct(private readonly TaxonomyRegistry $registry) {}
 
@@ -55,35 +55,35 @@ class LaratermsManager
     }
 
     /**
-     * Register a global callback that returns the "owner" model for any
-     * taxable model. Useful when most of your models share the same owner
-     * (e.g. always the user's current organization) so you don't have to
-     * implement termsOwner() on each one.
+     * Register a global callback that returns the scope model for any taxable
+     * model. Useful when most of your models share the same scope (e.g. always
+     * the user's current organization) so you don't have to implement
+     * termsScope() on each one.
      *
-     *   Laraterms::resolveOwnerUsing(fn (Model $m) => $m->organization);
+     *   Laraterms::resolveScopeUsing(fn (Model $m) => $m->organization);
      */
-    public function resolveOwnerUsing(?Closure $resolver): self
+    public function resolveScopeUsing(?Closure $resolver): self
     {
-        $this->ownerResolver = $resolver;
+        $this->scopeResolver = $resolver;
         return $this;
     }
 
-    public function ownerResolver(): ?Closure
+    public function scopeResolver(): ?Closure
     {
-        return $this->ownerResolver;
+        return $this->scopeResolver;
     }
 
     /**
-     * Resolve the owner for a given taxable model using the global resolver,
-     * normalized to an Owner value object. Returns Owner::global() if no
+     * Resolve the scope for a given taxable model using the global resolver,
+     * normalized to a Scope value object. Returns Scope::global() if no
      * resolver registered or the resolver returns null.
      *
-     * The resolver itself can return a Model, an Owner, an array
+     * The resolver itself can return a Model, a Scope, an array
      * ['type'=>..., 'id'=>...] or null — all are normalized here.
      */
-    public function ownerFor(Model $model): Owner
+    public function scopeFor(Model $model): Scope
     {
-        $raw = $this->ownerResolver ? ($this->ownerResolver)($model) : null;
-        return Owner::from($raw);
+        $raw = $this->scopeResolver ? ($this->scopeResolver)($model) : null;
+        return Scope::from($raw);
     }
 }

@@ -5,24 +5,54 @@ namespace EduLazaro\Laraterms\Concerns;
 use EduLazaro\Laraterms\Exceptions\TooManyTermsException;
 use EduLazaro\Laraterms\Facades\Laraterms;
 use EduLazaro\Laraterms\Models\Term;
-use EduLazaro\Laraterms\Support\Owner;
+use EduLazaro\Laraterms\Support\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 /**
- * Hace clasificable a cualquier modelo. Resuelve el owner a partir de:
- *   1. $this->termsOwner()                                   (override por modelo)
- *   2. Laraterms::resolveOwnerUsing(callable)                  (resolver global)
- *   3. null → Owner::global()
+ * Hace clasificable a cualquier modelo. Resuelve el scope a partir de:
+ *   1. $this->termsScope()                                   (override por modelo)
+ *   2. Laraterms::resolveScopeUsing(callable)                  (resolver global)
+ *   3. null → Scope::global()
  *
  * El resultado puede ser un Model, un array ['type'=>..., 'id'=>...], un
- * Owner instance o null — todo se normaliza al value-object Owner via
- * Owner::from(). No requiere morph map registrado.
+ * Scope instance o null — todo se normaliza al value-object Scope via
+ * Scope::from(). No requiere morph map registrado.
  */
 trait HasTerms
 {
+    /**
+     * Limpia los pivots polimórficos `termables` al borrar el modelo. La
+     * tabla pivot tiene cascade en `term_id` (cuando se borra un Term, todos
+     * sus pivots se van), pero NO puede tener cascade en `termable_id` porque
+     * es polimórfico (no admite foreign key). Sin esto, los pivots quedan
+     * huérfanos apuntando a un modelo que ya no existe.
+     *
+     * Soft delete: si el modelo usa SoftDeletes y NO es force-delete, se
+     * preservan los pivots para que `restore()` recupere las clasificaciones.
+     * Sólo se detachan en hard delete (incluido force delete).
+     *
+     * Nota: este hook NO se dispara si el modelo se borra por cascade de BD
+     * (ON DELETE CASCADE en una FK). En ese caso los pivots quedan huérfanos
+     * de todos modos hasta que se haga una limpieza periódica o se elimine
+     * por código.
+     */
+    protected static function bootHasTerms(): void
+    {
+        static::deleting(function ($model) {
+            $isSoftDeleting = method_exists($model, 'isForceDeleting')
+                && ! $model->isForceDeleting();
+
+            if ($isSoftDeleting) {
+                return;
+            }
+
+            $model->terms()->detach();
+        });
+    }
+
     public function terms(): MorphToMany
     {
         return $this->morphToMany(
@@ -155,37 +185,37 @@ trait HasTerms
         return $q->whereHas('terms', fn ($qq) => $qq->where(config('laraterms.tables.terms', 'terms') . '.taxonomy', $taxonomy));
     }
 
-    // ==================== Owner resolution ====================
+    // ==================== Scope resolution ====================
 
     /**
      * Override en tu modelo si quieres lógica custom. Puede devolver:
      *   - Model         → usa getMorphClass()+getKey()
-     *   - Owner         → tal cual
+     *   - Scope         → tal cual
      *   - array         → ['type'=>..., 'id'=>...] o [type, id]
      *   - null          → término global
      *
-     * Si no se sobrescribe, delega al resolver global de Laraterms::resolveOwnerUsing().
+     * Si no se sobrescribe, delega al resolver global de Laraterms::resolveScopeUsing().
      *
-     * @return Model|Owner|array|null
+     * @return Model|Scope|array|null
      */
-    public function termsOwner(): Model|Owner|array|null
+    public function termsScope(): Model|Scope|array|null
     {
-        $resolver = Laraterms::ownerResolver();
+        $resolver = Laraterms::scopeResolver();
         return $resolver ? $resolver($this) : null;
     }
 
     /**
-     * Resuelve el Owner normalizado para una taxonomía concreta. Honra
-     * `scope=global` (devuelve siempre Owner::global() ignorando el modelo).
+     * Resuelve el Scope normalizado para una taxonomía concreta. Honra
+     * `scope=global` (devuelve siempre Scope::global() ignorando el modelo).
      */
-    protected function ownerForTaxonomy(string $taxonomy): Owner
+    protected function scopeForTaxonomy(string $taxonomy): Scope
     {
         if (!Laraterms::registry()->has($taxonomy)) {
-            return Owner::from($this->termsOwner());
+            return Scope::from($this->termsScope());
         }
         $def = Laraterms::registry()->get($taxonomy);
-        if ($def->isGlobal()) return Owner::global();
-        return Owner::from($this->termsOwner());
+        if ($def->isGlobal()) return Scope::global();
+        return Scope::from($this->termsScope());
     }
 
     // ==================== Internals ====================
@@ -195,12 +225,12 @@ trait HasTerms
         if ($input instanceof Term) return $input;
         if (is_int($input)) return Term::find($input);
 
-        $owner = $taxonomy ? $this->ownerForTaxonomy($taxonomy) : Owner::from($this->termsOwner());
+        $scope = $taxonomy ? $this->scopeForTaxonomy($taxonomy) : Scope::from($this->termsScope());
 
         if ($taxonomy === null) {
             return Term::query()
-                ->where('owner_type', $owner->type)
-                ->where('owner_id', $owner->id)
+                ->where('scope_type', $scope->type)
+                ->where('scope_id', $scope->id)
                 ->where('handle', $input)
                 ->first();
         }
@@ -208,16 +238,16 @@ trait HasTerms
         // Try handle
         $hit = Term::query()
             ->where('taxonomy', $taxonomy)
-            ->where('owner_type', $owner->type)
-            ->where('owner_id', $owner->id)
+            ->where('scope_type', $scope->type)
+            ->where('scope_id', $scope->id)
             ->where('handle', $input)
             ->first();
         if ($hit) return $hit;
 
         $hit = Term::query()
             ->where('taxonomy', $taxonomy)
-            ->where('owner_type', $owner->type)
-            ->where('owner_id', $owner->id)
+            ->where('scope_type', $scope->type)
+            ->where('scope_id', $scope->id)
             ->whereRaw('LOWER(name) = ?', [mb_strtolower($input)])
             ->first();
         if ($hit) return $hit;
@@ -231,14 +261,14 @@ trait HasTerms
             );
         }
 
-        if ($def->isTenantScoped() && $owner->isGlobal()) {
+        if ($def->isTenantScoped() && $scope->isGlobal()) {
             throw new \RuntimeException(
-                "Taxonomy [{$taxonomy}] is tenant-scoped but no owner could be resolved for [" . static::class . "]. " .
-                "Implement termsOwner() on your model or configure Laraterms::resolveOwnerUsing()."
+                "Taxonomy [{$taxonomy}] is tenant-scoped but no scope could be resolved for [" . static::class . "]. " .
+                "Implement termsScope() on your model or configure Laraterms::resolveScopeUsing()."
             );
         }
 
-        return Term::findOrCreateByName($input, $taxonomy, $owner);
+        return Term::findOrCreateByName($input, $taxonomy, $scope);
     }
 
     /**

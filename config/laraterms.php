@@ -22,9 +22,9 @@ return [
     |                          taxonomía. Null = cualquier modelo con HasTerms.
     |
     |   scope                  'tenant' (default) | 'global'.
-    |                          - tenant: cada owner tiene sus propios terms.
-    |                          - global: terms del sistema (owner_type='', owner_id=0).
-    |   owner_model            FQCN del modelo Owner cuando scope=tenant (hint).
+    |                          - tenant: cada scope tiene sus propios terms.
+    |                          - global: terms del sistema (scope_type='', scope_id=0).
+    |   scope_model            FQCN del modelo Scope cuando scope=tenant (hint).
     |
     */
 
@@ -39,7 +39,7 @@ return [
             'sort'                => 'name',
             'models'              => null,
             'scope'               => 'tenant',
-            'owner_model'         => null,
+            'scope_model'         => null,
         ],
 
         'categories' => [
@@ -51,7 +51,7 @@ return [
             'sort'                => 'sort_order',
             'models'              => null,
             'scope'               => 'tenant',
-            'owner_model'         => null,
+            'scope_model'         => null,
         ],
 
     ],
@@ -74,7 +74,7 @@ return [
     |
     | El `handle` es el identificador estable del término (lo que antes era el
     | "slug"). Se genera automáticamente a partir del `name` plain al guardar
-    | si no se proporciona. Único por (owner_type, owner_id, taxonomy).
+    | si no se proporciona. Único por (scope_type, scope_id, taxonomy).
     |
     */
 
