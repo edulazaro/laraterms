@@ -1,3 +1,5 @@
+![Laraterms](art/banner.png)
+
 # Laraterms
 
 **Polymorphic taxonomies for Laravel.** Define `tags`, `categories` or any custom classification in config. Multi-tenant. Multi-locale. Hierarchical or flat. Spatie-compatible. Cross-locale search via auto-maintained `search_text`. Zero schema opinion beyond two tables.
