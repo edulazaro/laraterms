@@ -3,6 +3,8 @@
 namespace EduLazaro\Laraterms\Support;
 
 use EduLazaro\Laraterms\Models\Term;
+use EduLazaro\Laraterms\Support\Scope;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
 /**
@@ -17,12 +19,34 @@ use Illuminate\Support\Collection;
 class TermTree
 {
     /**
+     * Arbol de una taxonomia DENTRO de un ambito. El ambito no es opcional en
+     * la practica: sin el, una app multi-tenant mezclaria en el mismo arbol los
+     * terminos de todas las organizaciones. `null` significa el ambito global
+     * (scope_type='', scope_id=0), igual que en el resto de la API.
+     *
+     *   TermTree::for('categories', $organization);
+     *   TermTree::for('categories', $organization, includeGlobal: true);
+     *   TermTree::for('categories', $organization, onlyActive: true);
+     *
      * @return Collection<int, Term>
      */
-    public static function for(string $taxonomy): Collection
-    {
-        $all = Term::inTaxonomy($taxonomy)->ordered()->get();
-        return self::buildFromCollection($all);
+    public static function for(
+        string $taxonomy,
+        Model|Scope|array|null $scope = null,
+        bool $includeGlobal = false,
+        bool $onlyActive = false,
+    ): Collection {
+        $query = Term::inTaxonomy($taxonomy);
+
+        $includeGlobal
+            ? $query->forScopeOrGlobal($scope)
+            : $query->forScope($scope);
+
+        if ($onlyActive) {
+            $query->active();
+        }
+
+        return self::buildFromCollection($query->ordered()->get());
     }
 
     /**

@@ -144,7 +144,10 @@ Term::whereFullText('search_text', 'laravel')->get();   // if your engine suppor
 ```php
 use EduLazaro\Laraterms\Support\TermTree;
 
-$tree = TermTree::for('categories');                    // Collection of roots with children populated (1 query)
+$tree = TermTree::for('categories', $organization);      // Collection of roots with children populated (1 query)
+$tree = TermTree::for('categories', $organization, includeGlobal: true);
+$tree = TermTree::for('categories', $organization, onlyActive: true);
+$tree = TermTree::for('categories');                    // no scope = the global catalog only
 
 foreach (TermTree::flatten($tree) as [$term, $depth]) {
     echo str_repeat('. ', $depth) . $term->name . "\n";
