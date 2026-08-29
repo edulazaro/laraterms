@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 /**
@@ -201,10 +202,21 @@ class Term extends Model
         return $this->morphTo();
     }
 
-    public function termables(): MorphToMany
+    /**
+     * Los modelos de UN tipo concreto etiquetados con este termino. Eloquent
+     * necesita una clase concreta al otro lado de un morphedByMany, asi que el
+     * tipo se pasa como alias del morph map o como nombre de clase:
+     *
+     *   $term->termables('client')->get();
+     *   $term->termables(Client::class)->get();
+     *
+     * Para recorrer todos los tipos a la vez, consulta el pivote:
+     * DB::table(config('laraterms.tables.termables'))->where('term_id', $term->id)
+     */
+    public function termables(string $type): MorphToMany
     {
         return $this->morphedByMany(
-            related: Model::class,
+            related: Relation::getMorphedModel($type) ?? $type,
             name: 'termable',
             table: config('laraterms.tables.termables', 'termables'),
             foreignPivotKey: 'term_id',
