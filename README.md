@@ -7,7 +7,7 @@
     <a href="https://packagist.org/packages/edulazaro/laraterms"><img src="https://img.shields.io/packagist/v/edulazaro/laraterms" alt="Latest Stable Version"></a>
     <a href="https://packagist.org/packages/edulazaro/laraterms"><img src="https://img.shields.io/packagist/dt/edulazaro/laraterms" alt="Total Downloads"></a>
     <a href="https://packagist.org/packages/edulazaro/laraterms"><img src="https://img.shields.io/packagist/php-v/edulazaro/laraterms" alt="PHP Version"></a>
-    <a href="https://packagist.org/packages/edulazaro/laraterms"><img src="https://img.shields.io/packagist/l/edulazaro/laraterms" alt="License"></a>
+    <a href="https://github.com/edulazaro/laraterms/blob/main/LICENSE.md"><img src="https://img.shields.io/packagist/l/edulazaro/laraterms" alt="License"></a>
 </p>
 
 **Polymorphic taxonomies for Laravel.** Define `tags`, `categories` or any custom classification in config. Multi-tenant. Multi-locale. Hierarchical or flat. Spatie-compatible. Cross-locale search via auto-maintained `search_text`. Zero schema opinion beyond two tables.
