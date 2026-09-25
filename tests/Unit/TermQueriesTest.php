@@ -69,6 +69,19 @@ class TermQueriesTest extends TestCase
         );
     }
 
+    public function test_where_has_all_terms_matches_nothing_when_one_does_not_exist(): void
+    {
+        $this->assertSame(0, Post::whereHasAllTerms(['banca', 'nadie'], 'tags')->count());
+    }
+
+    public function test_where_has_all_terms_counts_a_repeated_term_once(): void
+    {
+        $this->assertEqualsCanonicalizing(
+            [$this->banking->id, $this->both->id],
+            Post::whereHasAllTerms(['banca', 'Banca'], 'tags')->pluck('id')->all(),
+        );
+    }
+
     public function test_where_in_taxonomy(): void
     {
         $this->assertSame([$this->both->id], Post::whereInTaxonomy('categories')->pluck('id')->all());

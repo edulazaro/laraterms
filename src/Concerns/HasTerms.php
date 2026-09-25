@@ -218,6 +218,8 @@ trait HasTerms
     /**
      * Scope the query to models that have all of the given terms.
      *
+     * A term that does not exist matches nothing, since no model can have it.
+     *
      * @param  Builder  $q
      * @param  iterable<int|string|Term>  $terms
      * @param  string|null  $taxonomy
@@ -225,7 +227,13 @@ trait HasTerms
      */
     public function scopeWhereHasAllTerms(Builder $q, iterable $terms, ?string $taxonomy = null): Builder
     {
-        $ids = $this->resolveTermIds($terms, $taxonomy);
+        $ids = [];
+        foreach ($terms as $term) {
+            $resolved = $this->resolveTerm($term, $taxonomy, createIfMissing: false);
+            if (!$resolved) return $q->whereRaw('1 = 0');
+            $ids[] = $resolved->id;
+        }
+        $ids = array_unique($ids);
         if (empty($ids)) return $q->whereRaw('1 = 0');
         foreach ($ids as $id) {
             $q->whereHas('terms', fn ($qq) => $qq->where(config('laraterms.tables.terms', 'terms') . '.id', $id));
