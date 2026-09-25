@@ -146,7 +146,7 @@ trait HasTerms
         if ($taxonomy) {
             $relation = $relation->where(config('laraterms.tables.terms', 'terms') . '.taxonomy', $taxonomy);
         }
-        $ids = $relation->pluck('id')->all();
+        $ids = $relation->pluck(config('laraterms.tables.terms', 'terms') . '.id')->all();
         if (!$ids) return;
         $this->terms()->detach($ids);
         if (config('laraterms.cache_counts', true)) {
