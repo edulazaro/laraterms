@@ -120,7 +120,7 @@ trait HasTerms
 
         $currentIds = $this->terms()
             ->where(config('laraterms.tables.terms', 'terms') . '.taxonomy', $taxonomy)
-            ->pluck('id')
+            ->pluck(config('laraterms.tables.terms', 'terms') . '.id')
             ->all();
         if ($currentIds) $this->terms()->detach($currentIds);
 
