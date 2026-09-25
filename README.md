@@ -103,6 +103,8 @@ Post::whereHasAllTerms(['laravel', 'tutorial'], 'tags')->get();
 Post::whereInTaxonomy('categories')->get();
 ```
 
+`whereHasAllTerms()` matches nothing when one of the terms does not exist, since no model can have it. `whereHasAnyTerm()` just ignores the unknown ones.
+
 ## Multi-locale (i18n)
 
 Each translatable field has **two columns**: the canonical one (`name`, `description`) and the translations one (`name_translations`, `description_translations`). Spatie-compatible (format: `{"en": "...", "es": "..."}`).
