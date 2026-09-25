@@ -30,6 +30,16 @@ class DeletingModelsTest extends TestCase
         $this->assertSame(0, DB::table('termables')->count());
     }
 
+    public function test_deleting_a_model_keeps_the_counts_right(): void
+    {
+        $post = Post::create(['title' => 'Clausula suelo']);
+        $term = $post->attachTerm('Banca', 'tags');
+
+        $post->delete();
+
+        $this->assertSame(0, $term->fresh()->terms_count);
+    }
+
     public function test_a_soft_delete_keeps_the_terms_for_restore(): void
     {
         $post = SoftPost::create(['title' => 'Clausula suelo']);

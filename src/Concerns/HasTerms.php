@@ -35,7 +35,7 @@ trait HasTerms
                 return;
             }
 
-            $model->terms()->detach();
+            $model->detachAll();
         });
     }
 
