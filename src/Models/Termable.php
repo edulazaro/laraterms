@@ -5,9 +5,7 @@ namespace EduLazaro\Laraterms\Models;
 use Illuminate\Database\Eloquent\Relations\MorphPivot;
 
 /**
- * Pivot between Term and any taxable model. Custom MorphPivot lets us add
- * `sort_order` and timestamps on the relationship itself (so you can show
- * terms in the order they were attached).
+ * The pivot between terms and taxable models, with sort order and timestamps.
  */
 class Termable extends MorphPivot
 {
@@ -15,6 +13,11 @@ class Termable extends MorphPivot
 
     protected $fillable = ['term_id', 'termable_type', 'termable_id', 'sort_order'];
 
+    /**
+     * Get the table associated with the pivot.
+     *
+     * @return string
+     */
     public function getTable(): string
     {
         return config('laraterms.tables.termables', 'termables');

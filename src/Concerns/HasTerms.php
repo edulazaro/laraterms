@@ -12,32 +12,18 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 /**
- * Hace clasificable a cualquier modelo. Resuelve el scope a partir de:
- *   1. $this->termsScope()                                   (override por modelo)
- *   2. Laraterms::resolveScopeUsing(callable)                  (resolver global)
- *   3. null → Scope::global()
+ * Lets a model be classified with terms.
  *
- * El resultado puede ser un Model, un array ['type'=>..., 'id'=>...], un
- * Scope instance o null — todo se normaliza al value-object Scope via
- * Scope::from(). No requiere morph map registrado.
+ * The scope comes from termsScope(), else Laraterms::resolveScopeUsing(), else the global one.
  */
 trait HasTerms
 {
     /**
-     * Limpia los pivots polimórficos `termables` al borrar el modelo. La
-     * tabla pivot tiene cascade en `term_id` (cuando se borra un Term, todos
-     * sus pivots se van), pero NO puede tener cascade en `termable_id` porque
-     * es polimórfico (no admite foreign key). Sin esto, los pivots quedan
-     * huérfanos apuntando a un modelo que ya no existe.
+     * Detach the model's terms when it is hard deleted.
      *
-     * Soft delete: si el modelo usa SoftDeletes y NO es force-delete, se
-     * preservan los pivots para que `restore()` recupere las clasificaciones.
-     * Sólo se detachan en hard delete (incluido force delete).
+     * Soft deletes keep them, so restore() brings the classification back.
      *
-     * Nota: este hook NO se dispara si el modelo se borra por cascade de BD
-     * (ON DELETE CASCADE en una FK). En ese caso los pivots quedan huérfanos
-     * de todos modos hasta que se haga una limpieza periódica o se elimine
-     * por código.
+     * @return void
      */
     protected static function bootHasTerms(): void
     {
@@ -53,6 +39,11 @@ trait HasTerms
         });
     }
 
+    /**
+     * Get all of the terms attached to the model.
+     *
+     * @return MorphToMany
+     */
     public function terms(): MorphToMany
     {
         return $this->morphToMany(
@@ -64,6 +55,12 @@ trait HasTerms
         )->withPivot('sort_order')->withTimestamps();
     }
 
+    /**
+     * Get the model's terms in the given taxonomy.
+     *
+     * @param  string  $taxonomy
+     * @return Collection<int, Term>
+     */
     public function termsIn(string $taxonomy): Collection
     {
         return $this->terms()
@@ -71,6 +68,12 @@ trait HasTerms
             ->get();
     }
 
+    /**
+     * Determine if the model has any term in the given taxonomy.
+     *
+     * @param  string  $taxonomy
+     * @return bool
+     */
     public function hasTermsIn(string $taxonomy): bool
     {
         return $this->terms()
@@ -78,6 +81,13 @@ trait HasTerms
             ->exists();
     }
 
+    /**
+     * Attach a term to the model, creating it when it does not exist.
+     *
+     * @param  Term|int|string  $term
+     * @param  string|null  $taxonomy
+     * @return Term
+     */
     public function attachTerm(Term|int|string $term, ?string $taxonomy = null): Term
     {
         $resolved = $this->resolveTerm($term, $taxonomy, createIfMissing: true);
@@ -88,7 +98,10 @@ trait HasTerms
     }
 
     /**
-     * @param iterable<int|string|Term> $terms
+     * Attach several terms to the model, creating the missing ones.
+     *
+     * @param  iterable<int|string|Term>  $terms
+     * @param  string|null  $taxonomy
      * @return Collection<int, Term>
      */
     public function attachTerms(iterable $terms, ?string $taxonomy = null): Collection
@@ -106,7 +119,10 @@ trait HasTerms
     }
 
     /**
-     * @param iterable<int|string|Term> $terms
+     * Replace the model's terms in the given taxonomy.
+     *
+     * @param  iterable<int|string|Term>  $terms
+     * @param  string  $taxonomy
      * @return Collection<int, Term>
      */
     public function syncTerms(iterable $terms, string $taxonomy): Collection
@@ -132,6 +148,13 @@ trait HasTerms
         return $resolved;
     }
 
+    /**
+     * Detach a term from the model.
+     *
+     * @param  Term|int|string  $term
+     * @param  string|null  $taxonomy
+     * @return void
+     */
     public function detachTerm(Term|int|string $term, ?string $taxonomy = null): void
     {
         $resolved = $this->resolveTerm($term, $taxonomy, createIfMissing: false);
@@ -140,6 +163,12 @@ trait HasTerms
         $this->touchTermCount($resolved);
     }
 
+    /**
+     * Detach every term from the model, or only those in the given taxonomy.
+     *
+     * @param  string|null  $taxonomy
+     * @return void
+     */
     public function detachAll(?string $taxonomy = null): void
     {
         $relation = $this->terms();
@@ -156,6 +185,14 @@ trait HasTerms
 
     // ==================== Query scopes ====================
 
+    /**
+     * Scope the query to models that have the given term.
+     *
+     * @param  Builder  $q
+     * @param  Term|int|string  $term
+     * @param  string|null  $taxonomy
+     * @return Builder
+     */
     public function scopeWhereHasTerm(Builder $q, Term|int|string $term, ?string $taxonomy = null): Builder
     {
         $termModel = $this->resolveTerm($term, $taxonomy, createIfMissing: false);
@@ -163,6 +200,14 @@ trait HasTerms
         return $q->whereHas('terms', fn ($qq) => $qq->where(config('laraterms.tables.terms', 'terms') . '.id', $termModel->id));
     }
 
+    /**
+     * Scope the query to models that have any of the given terms.
+     *
+     * @param  Builder  $q
+     * @param  iterable<int|string|Term>  $terms
+     * @param  string|null  $taxonomy
+     * @return Builder
+     */
     public function scopeWhereHasAnyTerm(Builder $q, iterable $terms, ?string $taxonomy = null): Builder
     {
         $ids = $this->resolveTermIds($terms, $taxonomy);
@@ -170,6 +215,14 @@ trait HasTerms
         return $q->whereHas('terms', fn ($qq) => $qq->whereIn(config('laraterms.tables.terms', 'terms') . '.id', $ids));
     }
 
+    /**
+     * Scope the query to models that have all of the given terms.
+     *
+     * @param  Builder  $q
+     * @param  iterable<int|string|Term>  $terms
+     * @param  string|null  $taxonomy
+     * @return Builder
+     */
     public function scopeWhereHasAllTerms(Builder $q, iterable $terms, ?string $taxonomy = null): Builder
     {
         $ids = $this->resolveTermIds($terms, $taxonomy);
@@ -180,6 +233,13 @@ trait HasTerms
         return $q;
     }
 
+    /**
+     * Scope the query to models with any term in the given taxonomy.
+     *
+     * @param  Builder  $q
+     * @param  string  $taxonomy
+     * @return Builder
+     */
     public function scopeWhereInTaxonomy(Builder $q, string $taxonomy): Builder
     {
         return $q->whereHas('terms', fn ($qq) => $qq->where(config('laraterms.tables.terms', 'terms') . '.taxonomy', $taxonomy));
@@ -188,13 +248,9 @@ trait HasTerms
     // ==================== Scope resolution ====================
 
     /**
-     * Override en tu modelo si quieres lógica custom. Puede devolver:
-     *   - Model         → usa getMorphClass()+getKey()
-     *   - Scope         → tal cual
-     *   - array         → ['type'=>..., 'id'=>...] o [type, id]
-     *   - null          → término global
+     * Get the scope the model's terms belong to.
      *
-     * Si no se sobrescribe, delega al resolver global de Laraterms::resolveScopeUsing().
+     * Override it per model; by default it asks the resolver set with Laraterms::resolveScopeUsing().
      *
      * @return Model|Scope|array|null
      */
@@ -205,8 +261,10 @@ trait HasTerms
     }
 
     /**
-     * Resuelve el Scope normalizado para una taxonomía concreta. Honra
-     * `scope=global` (devuelve siempre Scope::global() ignorando el modelo).
+     * Get the scope to use for the given taxonomy. Global taxonomies ignore the model.
+     *
+     * @param  string  $taxonomy
+     * @return Scope
      */
     protected function scopeForTaxonomy(string $taxonomy): Scope
     {
@@ -220,6 +278,14 @@ trait HasTerms
 
     // ==================== Internals ====================
 
+    /**
+     * Resolve a term from a model, an id, a handle or a name.
+     *
+     * @param  Term|int|string  $input
+     * @param  string|null  $taxonomy
+     * @param  bool  $createIfMissing
+     * @return Term|null
+     */
     protected function resolveTerm(Term|int|string $input, ?string $taxonomy, bool $createIfMissing): ?Term
     {
         if ($input instanceof Term) return $input;
@@ -272,7 +338,10 @@ trait HasTerms
     }
 
     /**
-     * @param iterable<int|string|Term> $terms
+     * Resolve the ids of the given terms, skipping unknown ones.
+     *
+     * @param  iterable<int|string|Term>  $terms
+     * @param  string|null  $taxonomy
      * @return list<int>
      */
     protected function resolveTermIds(iterable $terms, ?string $taxonomy): array
@@ -286,6 +355,16 @@ trait HasTerms
             ->all();
     }
 
+    /**
+     * Ensure the model stays within the taxonomy's term limit.
+     *
+     * @param  string  $taxonomy
+     * @param  int  $addingCount
+     * @param  bool  $replacing
+     * @return void
+     *
+     * @throws \EduLazaro\Laraterms\Exceptions\TooManyTermsException
+     */
     protected function enforceMaxTerms(string $taxonomy, int $addingCount, bool $replacing = false): void
     {
         if (!Laraterms::registry()->has($taxonomy)) return;
@@ -303,6 +382,12 @@ trait HasTerms
         }
     }
 
+    /**
+     * Refresh the cached count of the given term when counts are enabled.
+     *
+     * @param  Term  $term
+     * @return void
+     */
     protected function touchTermCount(Term $term): void
     {
         if (!config('laraterms.cache_counts', true)) return;

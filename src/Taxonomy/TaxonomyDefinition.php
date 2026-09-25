@@ -10,6 +10,20 @@ final class TaxonomyDefinition
     public const SCOPE_TENANT = 'tenant';
     public const SCOPE_GLOBAL = 'global';
 
+    /**
+     * Create a new taxonomy definition.
+     *
+     * @param  string  $handle
+     * @param  string  $label
+     * @param  string  $labelPlural
+     * @param  bool  $hierarchical
+     * @param  int|null  $maxTermsPerModel
+     * @param  bool  $required
+     * @param  string  $sort
+     * @param  array|null  $models
+     * @param  string  $scope
+     * @param  string|null  $scopeModel
+     */
     public function __construct(
         public readonly string $handle,
         public readonly string $label,
@@ -23,6 +37,13 @@ final class TaxonomyDefinition
         public readonly ?string $scopeModel = null,
     ) {}
 
+    /**
+     * Create a definition from its config entry.
+     *
+     * @param  string  $handle
+     * @param  array  $config
+     * @return self
+     */
     public static function fromConfig(string $handle, array $config): self
     {
         return new self(
@@ -39,16 +60,32 @@ final class TaxonomyDefinition
         );
     }
 
+    /**
+     * Determine if each scope has its own terms.
+     *
+     * @return bool
+     */
     public function isTenantScoped(): bool
     {
         return $this->scope === self::SCOPE_TENANT;
     }
 
+    /**
+     * Determine if the terms are shared by every scope.
+     *
+     * @return bool
+     */
     public function isGlobal(): bool
     {
         return $this->scope === self::SCOPE_GLOBAL;
     }
 
+    /**
+     * Determine if the given model may use the taxonomy.
+     *
+     * @param  string  $modelClass
+     * @return bool
+     */
     public function allowsModel(string $modelClass): bool
     {
         if ($this->models === null) return true;

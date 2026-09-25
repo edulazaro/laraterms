@@ -6,11 +6,17 @@ use EduLazaro\Laraterms\Models\Term;
 use Illuminate\Support\Str;
 
 /**
- * Genera el `handle` único de un término dentro de su scope
- * (scope_type, scope_id, taxonomy). Sluggify con sufijo numérico ante colisión.
+ * Generates a term's handle, unique within its taxonomy and scope.
  */
 class HandleGenerator
 {
+    /**
+     * Create a new handle generator instance.
+     *
+     * @param  string  $locale
+     * @param  string  $separator
+     * @param  bool  $uniqueWithinScope
+     */
     public function __construct(
         private readonly string $locale = 'en',
         private readonly string $separator = '-',
@@ -18,7 +24,14 @@ class HandleGenerator
     ) {}
 
     /**
-     * Genera handle a partir de $sourceName, scoped a (scopeType, scopeId, taxonomy).
+     * Generate a handle for the name, unique within its taxonomy and scope.
+     *
+     * @param  string  $sourceName
+     * @param  string  $taxonomy
+     * @param  string  $scopeType
+     * @param  int  $scopeId
+     * @param  int|null  $ignoreTermId
+     * @return string
      */
     public function generate(
         string $sourceName,
@@ -41,6 +54,16 @@ class HandleGenerator
         return $candidate;
     }
 
+    /**
+     * Determine if the handle is already taken in the taxonomy and scope.
+     *
+     * @param  string  $handle
+     * @param  string  $taxonomy
+     * @param  string  $scopeType
+     * @param  int  $scopeId
+     * @param  int|null  $ignoreTermId
+     * @return bool
+     */
     private function existsInScope(
         string $handle,
         string $taxonomy,

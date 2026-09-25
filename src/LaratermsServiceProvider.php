@@ -8,6 +8,11 @@ use Illuminate\Support\ServiceProvider;
 
 class LaratermsServiceProvider extends ServiceProvider
 {
+    /**
+     * Register any package services.
+     *
+     * @return void
+     */
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__ . '/../config/laraterms.php', 'laraterms');
@@ -31,6 +36,11 @@ class LaratermsServiceProvider extends ServiceProvider
         });
     }
 
+    /**
+     * Bootstrap any package services.
+     *
+     * @return void
+     */
     public function boot(): void
     {
         if ($this->app->runningInConsole()) {

@@ -60,6 +60,11 @@ class Term extends Model
         'scope_id'   => 0,
     ];
 
+    /**
+     * Get the table associated with the model.
+     *
+     * @return string
+     */
     public function getTable(): string
     {
         return config('laraterms.tables.terms', 'terms');
@@ -68,18 +73,22 @@ class Term extends Model
     // ==================== Accessors (i18n-aware) ====================
 
     /**
-     * Devuelve el `name` en el locale activo. Lee del campo plain como fallback.
+     * Get the name in the current locale.
      *
-     * Importante: leemos `$this->attributes['name_translations']` directo en vez
-     * de `$this->name_translations` para evitar conflicto con paquetes externos
-     * tipo spatie/laravel-translatable que sobreescriban el accessor del campo
-     * de traducciones — aquí queremos el array crudo siempre.
+     * Reads the raw translations so a translatable package on the app side cannot override them.
+     *
+     * @return string
      */
     public function getNameAttribute(): string
     {
         return $this->localized('name', 'name_translations');
     }
 
+    /**
+     * Get the description in the current locale.
+     *
+     * @return string|null
+     */
     public function getDescriptionAttribute(): ?string
     {
         $value = $this->localized('description', 'description_translations');
@@ -87,8 +96,11 @@ class Term extends Model
     }
 
     /**
-     * Resuelve un campo translatable: usa traducción del locale activo, luego
-     * fallback locale, luego columna plain.
+     * Get a translatable column in the current locale, then the fallback locale, then its plain value.
+     *
+     * @param  string  $plainCol
+     * @param  string  $translationsCol
+     * @return string
      */
     protected function localized(string $plainCol, string $translationsCol): string
     {
@@ -109,6 +121,11 @@ class Term extends Model
 
     // ==================== Boot ====================
 
+    /**
+     * Generate the handle and rebuild the search text whenever the term is saved.
+     *
+     * @return void
+     */
     protected static function booted(): void
     {
         static::saving(function (Term $term): void {
@@ -143,10 +160,9 @@ class Term extends Model
     }
 
     /**
-     * Reconstruye search_text concatenando name, valores de name_translations,
-     * description y valores de description_translations. Llamado automáticamente
-     * en saving(). Disponible públicamente para re-construcciones batch tras
-     * imports masivos.
+     * Rebuild the search text from the name, the description and their translations.
+     *
+     * @return void
      */
     public function rebuildSearchText(): void
     {
@@ -170,8 +186,10 @@ class Term extends Model
     }
 
     /**
-     * Lee un atributo JSON crudo y lo decodifica a array. Necesario para evitar
-     * que otros accessors (Spatie translatable user-side) interfieran.
+     * Decode a raw JSON attribute into an array.
+     *
+     * @param  string  $key
+     * @return array
      */
     private function arrayFromAttribute(string $key): array
     {
@@ -187,31 +205,43 @@ class Term extends Model
 
     // ==================== Relations ====================
 
+    /**
+     * Get the parent term.
+     *
+     * @return BelongsTo
+     */
     public function parent(): BelongsTo
     {
         return $this->belongsTo(self::class, 'parent_id');
     }
 
+    /**
+     * Get the child terms.
+     *
+     * @return HasMany
+     */
     public function children(): HasMany
     {
         return $this->hasMany(self::class, 'parent_id')->orderBy('sort_order')->orderBy('name');
     }
 
+    /**
+     * Get the model the term is scoped to.
+     *
+     * @return MorphTo
+     */
     public function scope(): MorphTo
     {
         return $this->morphTo();
     }
 
     /**
-     * Los modelos de UN tipo concreto etiquetados con este termino. Eloquent
-     * necesita una clase concreta al otro lado de un morphedByMany, asi que el
-     * tipo se pasa como alias del morph map o como nombre de clase:
+     * Get the models of the given type tagged with the term.
      *
-     *   $term->termables('client')->get();
-     *   $term->termables(Client::class)->get();
+     * Accepts a morph map alias or a class name.
      *
-     * Para recorrer todos los tipos a la vez, consulta el pivote:
-     * DB::table(config('laraterms.tables.termables'))->where('term_id', $term->id)
+     * @param  string  $type
+     * @return MorphToMany
      */
     public function termables(string $type): MorphToMany
     {
@@ -226,42 +256,93 @@ class Term extends Model
 
     // ==================== Scopes ====================
 
+    /**
+     * Scope the query to the given taxonomy.
+     *
+     * @param  Builder  $q
+     * @param  string  $taxonomy
+     * @return Builder
+     */
     public function scopeInTaxonomy(Builder $q, string $taxonomy): Builder
     {
         return $q->where('taxonomy', $taxonomy);
     }
 
+    /**
+     * Scope the query to terms without a parent.
+     *
+     * @param  Builder  $q
+     * @return Builder
+     */
     public function scopeRoots(Builder $q): Builder
     {
         return $q->whereNull('parent_id');
     }
 
+    /**
+     * Order the query by sort order, then by name.
+     *
+     * @param  Builder  $q
+     * @return Builder
+     */
     public function scopeOrdered(Builder $q): Builder
     {
         return $q->orderBy('sort_order')->orderBy('name');
     }
 
+    /**
+     * Scope the query to active terms.
+     *
+     * @param  Builder  $q
+     * @return Builder
+     */
     public function scopeActive(Builder $q): Builder
     {
         return $q->where('is_active', true);
     }
 
+    /**
+     * Scope the query to inactive terms.
+     *
+     * @param  Builder  $q
+     * @return Builder
+     */
     public function scopeInactive(Builder $q): Builder
     {
         return $q->where('is_active', false);
     }
 
+    /**
+     * Scope the query to global terms.
+     *
+     * @param  Builder  $q
+     * @return Builder
+     */
     public function scopeGlobal(Builder $q): Builder
     {
         return $q->where('scope_type', '')->where('scope_id', 0);
     }
 
+    /**
+     * Scope the query to the given scope.
+     *
+     * @param  Builder  $q
+     * @param  Model|Scope|array|null  $scope
+     * @return Builder
+     */
     public function scopeForScope(Builder $q, Model|Scope|array|null $scope): Builder
     {
         $s = Scope::from($scope);
         return $q->where('scope_type', $s->type)->where('scope_id', $s->id);
     }
 
+    /**
+     * Scope the query to the given scope and to global terms.
+     *
+     * @param  Builder  $q
+     * @param  Model|Scope|array|null  $scope
+     * @return Builder
+     */
     public function scopeForScopeOrGlobal(Builder $q, Model|Scope|array|null $scope): Builder
     {
         $s = Scope::from($scope);
@@ -275,6 +356,14 @@ class Term extends Model
         });
     }
 
+    /**
+     * Scope the query to the given handle, optionally within a taxonomy.
+     *
+     * @param  Builder  $q
+     * @param  string  $handle
+     * @param  string|null  $taxonomy
+     * @return Builder
+     */
     public function scopeByHandle(Builder $q, string $handle, ?string $taxonomy = null): Builder
     {
         $q->where('handle', $handle);
@@ -283,9 +372,11 @@ class Term extends Model
     }
 
     /**
-     * Búsqueda agnóstica de idioma. Usa LIKE sobre search_text. Para sitios con
-     * muchos terms, considera FULLTEXT (ya creado en la migración default) y
-     * sustituye esto por `whereFullText('search_text', $q)` en tu app.
+     * Search the terms by name or description in any language.
+     *
+     * @param  Builder  $q
+     * @param  string  $term
+     * @return Builder
      */
     public function scopeSearch(Builder $q, string $term): Builder
     {
@@ -296,6 +387,11 @@ class Term extends Model
 
     // ==================== Helpers ====================
 
+    /**
+     * Get the definition of the term's taxonomy.
+     *
+     * @return TaxonomyDefinition|null
+     */
     public function taxonomyDefinition(): ?TaxonomyDefinition
     {
         if (!$this->taxonomy) return null;
@@ -303,12 +399,21 @@ class Term extends Model
         return $registry->has($this->taxonomy) ? $registry->get($this->taxonomy) : null;
     }
 
+    /**
+     * Determine if the term is global.
+     *
+     * @return bool
+     */
     public function isGlobal(): bool
     {
         return $this->scope_type === '' && (int) $this->scope_id === 0;
     }
 
-    /** @return Collection<int, Term> */
+    /**
+     * Get the term's ancestors, root first.
+     *
+     * @return Collection<int, Term>
+     */
     public function ancestors(): Collection
     {
         $chain = collect();
@@ -321,12 +426,22 @@ class Term extends Model
         return $chain;
     }
 
+    /**
+     * Get the path from the root to the term.
+     *
+     * @param  string  $separator
+     * @return string
+     */
     public function breadcrumb(string $separator = ' > '): string
     {
         return $this->ancestors()->push($this)->pluck('name')->implode($separator);
     }
 
-    /** @return list<int> */
+    /**
+     * Get the ids of every descendant term.
+     *
+     * @return list<int>
+     */
     public function descendantIds(): array
     {
         $ids = [];
@@ -340,12 +455,22 @@ class Term extends Model
         return $ids;
     }
 
+    /**
+     * Show the term in pickers again.
+     *
+     * @return $this
+     */
     public function activate(): self
     {
         $this->is_active = true;
         return tap($this)->save();
     }
 
+    /**
+     * Hide the term from pickers, keeping it on the models that have it.
+     *
+     * @return $this
+     */
     public function deactivate(): self
     {
         $this->is_active = false;
@@ -353,16 +478,13 @@ class Term extends Model
     }
 
     /**
-     * Fusiona este término en $into: mueve todos los termables del actual al
-     * destino (sin duplicar), recalcula counts y opcionalmente desactiva o
-     * borra el origen.
+     * Move the term's models to another term of the same taxonomy and scope.
      *
-     * Guard: ambos terms deben ser de la misma taxonomy y mismo scope.
-     * Lanza InvalidArgumentException si no.
+     * @param  self  $into
+     * @param  bool  $deactivateSource  Deactivate this term instead of deleting it.
+     * @return self
      *
-     * @param self $into                       Término destino (canónico).
-     * @param bool $deactivateSource           true: marca el origen como inactivo (conserva BD).
-     *                                         false: delete real con cascade.
+     * @throws \InvalidArgumentException
      */
     public function mergeInto(self $into, bool $deactivateSource = true): self
     {
@@ -418,6 +540,11 @@ class Term extends Model
         return $into;
     }
 
+    /**
+     * Recount the models tagged with the term and store it.
+     *
+     * @return int
+     */
     public function refreshCount(): int
     {
         $count = $this->newQuery()
@@ -430,8 +557,13 @@ class Term extends Model
     }
 
     /**
-     * Find-or-create within (taxonomy, scope) by canonical name. Scope acepta
-     * Model, array, Scope VO o null (= global).
+     * Find a term by name within a taxonomy and scope, or create it.
+     *
+     * @param  string  $name
+     * @param  string  $taxonomy
+     * @param  Model|Scope|array|null  $scope
+     * @param  int|null  $parentId
+     * @return self
      */
     public static function findOrCreateByName(
         string $name,

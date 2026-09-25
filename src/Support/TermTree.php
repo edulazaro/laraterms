@@ -8,26 +8,19 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
 /**
- * Build an in-memory tree from a flat collection of hierarchical terms.
- * Uses a single query (no N+1) and assembles the tree client-side.
- *
- *   $tree = TermTree::for('categories');
- *   foreach ($tree as $node) {
- *       // $node is a Term with a populated `children` Collection (recursive)
- *   }
+ * Builds in-memory trees of hierarchical terms without N+1 queries.
  */
 class TermTree
 {
     /**
-     * Arbol de una taxonomia DENTRO de un ambito. El ambito no es opcional en
-     * la practica: sin el, una app multi-tenant mezclaria en el mismo arbol los
-     * terminos de todas las organizaciones. `null` significa el ambito global
-     * (scope_type='', scope_id=0), igual que en el resto de la API.
+     * Build the tree of a taxonomy within a scope, in a single query.
      *
-     *   TermTree::for('categories', $organization);
-     *   TermTree::for('categories', $organization, includeGlobal: true);
-     *   TermTree::for('categories', $organization, onlyActive: true);
+     * A null scope means the global one; pass the tenant's so their trees never mix.
      *
+     * @param  string  $taxonomy
+     * @param  Model|Scope|array|null  $scope
+     * @param  bool  $includeGlobal
+     * @param  bool  $onlyActive
      * @return Collection<int, Term>
      */
     public static function for(
@@ -50,10 +43,9 @@ class TermTree
     }
 
     /**
-     * Build a tree from an already-fetched collection. Useful when you've
-     * filtered or eager-loaded terms yourself.
+     * Build a tree from terms already fetched.
      *
-     * @param Collection<int, Term> $terms
+     * @param  Collection<int, Term>  $terms
      * @return Collection<int, Term>
      */
     public static function buildFromCollection(Collection $terms): Collection
@@ -71,14 +63,10 @@ class TermTree
     }
 
     /**
-     * Flatten a tree (depth-first), emitting [Term, depth] tuples — handy
-     * for indented selects like:
+     * Flatten a tree depth first into [term, depth] pairs, for indented selects.
      *
-     *   - Tech
-     *     - Web
-     *       - Laravel
-     *
-     * @param Collection<int, Term> $tree
+     * @param  Collection<int, Term>  $tree
+     * @param  int  $depth
      * @return Collection<int, array{0: Term, 1: int}>
      */
     public static function flatten(Collection $tree, int $depth = 0): Collection

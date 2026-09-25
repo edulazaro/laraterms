@@ -9,58 +9,79 @@ use EduLazaro\Laraterms\Taxonomy\TaxonomyRegistry;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Manager público del paquete. Holds the singleton TaxonomyRegistry and
- * exposes a global scope resolver for tenant-scoped taxonomies.
- *
- *   Laraterms::registry()->all();
- *   Laraterms::get('tags');
- *   Laraterms::has('regions');
- *   Laraterms::register('regions', [...]);
- *
- *   // Define how the package figures out the "scope" for any model
- *   // that doesn't override termsScope() itself:
- *   Laraterms::resolveScopeUsing(fn (Model $m) => $m->organization ?? null);
+ * The service behind the Laraterms facade: the taxonomy registry and the scope resolver.
  */
 class LaratermsManager
 {
     /** @var Closure|null */
     private $scopeResolver = null;
 
+    /**
+     * Create a new Laraterms manager instance.
+     *
+     * @param  TaxonomyRegistry  $registry
+     */
     public function __construct(private readonly TaxonomyRegistry $registry) {}
 
+    /**
+     * Get the taxonomy registry.
+     *
+     * @return TaxonomyRegistry
+     */
     public function registry(): TaxonomyRegistry
     {
         return $this->registry;
     }
 
+    /**
+     * Get the definition of the given taxonomy.
+     *
+     * @param  string  $handle
+     * @return TaxonomyDefinition
+     */
     public function get(string $handle): TaxonomyDefinition
     {
         return $this->registry->get($handle);
     }
 
+    /**
+     * Determine if the given taxonomy is registered.
+     *
+     * @param  string  $handle
+     * @return bool
+     */
     public function has(string $handle): bool
     {
         return $this->registry->has($handle);
     }
 
+    /**
+     * Register a taxonomy at runtime.
+     *
+     * @param  string  $handle
+     * @param  array  $config
+     * @return TaxonomyDefinition
+     */
     public function register(string $handle, array $config): TaxonomyDefinition
     {
         return $this->registry->register($handle, $config);
     }
 
-    /** @return list<string> */
+    /**
+     * Get the handles of every registered taxonomy.
+     *
+     * @return list<string>
+     */
     public function handles(): array
     {
         return $this->registry->handles();
     }
 
     /**
-     * Register a global callback that returns the scope model for any taxable
-     * model. Useful when most of your models share the same scope (e.g. always
-     * the user's current organization) so you don't have to implement
-     * termsScope() on each one.
+     * Set the callback that resolves the scope of any taxable model.
      *
-     *   Laraterms::resolveScopeUsing(fn (Model $m) => $m->organization);
+     * @param  Closure|null  $resolver
+     * @return $this
      */
     public function resolveScopeUsing(?Closure $resolver): self
     {
@@ -68,18 +89,21 @@ class LaratermsManager
         return $this;
     }
 
+    /**
+     * Get the callback that resolves the scope of taxable models.
+     *
+     * @return Closure|null
+     */
     public function scopeResolver(): ?Closure
     {
         return $this->scopeResolver;
     }
 
     /**
-     * Resolve the scope for a given taxable model using the global resolver,
-     * normalized to a Scope value object. Returns Scope::global() if no
-     * resolver registered or the resolver returns null.
+     * Resolve the scope of the given model with the global resolver.
      *
-     * The resolver itself can return a Model, a Scope, an array
-     * ['type'=>..., 'id'=>...] or null — all are normalized here.
+     * @param  Model  $model
+     * @return Scope
      */
     public function scopeFor(Model $model): Scope
     {

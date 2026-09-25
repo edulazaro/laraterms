@@ -5,35 +5,28 @@ namespace EduLazaro\Laraterms\Support;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Lightweight value object representing the SCOPE of a Term — i.e. the
- * entity (Organization, Team, Case, User...) under which the term catalog
- * is isolated.
+ * The entity a term catalog belongs to, or the global catalog.
  *
- * The scope is what makes two Terms with the same `name` different rows: a
- * "VIP" term in scope=organization:5 is a separate record from a "VIP" term
- * in scope=organization:6 or in scope=case:123.
- *
- * Use Scope::from(...) anywhere you want to accept flexible inputs:
- *
- *   - Eloquent Model           → uses getMorphClass() + getKey()
- *   - Scope instance           → returned as-is
- *   - array ['type' => 'organization', 'id' => 5]
- *   - array ['type' => User::class, 'id' => 42]
- *   - null                     → Scope::global()  (scope_type='', scope_id=0)
- *
- * This means the package doesn't require you to load a full Eloquent Model
- * just to scope a query. If you already have the scope id + morph alias in
- * memory (session, request attribute, JWT claim), pass the tuple.
+ * Two terms with the same name in different scopes are different rows.
  */
 final class Scope
 {
+    /**
+     * Create a new scope instance.
+     *
+     * @param  string  $type
+     * @param  int  $id
+     */
     public function __construct(
         public readonly string $type,
         public readonly int $id,
     ) {}
 
     /**
-     * Normalize anything the user might hand us into a canonical Scope.
+     * Normalize a model, a scope, an array or null into a scope.
+     *
+     * @param  Model|self|array|null  $input
+     * @return self
      */
     public static function from(Model|self|array|null $input): self
     {
@@ -61,21 +54,42 @@ final class Scope
         );
     }
 
+    /**
+     * Get the global scope.
+     *
+     * @return self
+     */
     public static function global(): self
     {
         return new self('', 0);
     }
 
+    /**
+     * Determine if this is the global scope.
+     *
+     * @return bool
+     */
     public function isGlobal(): bool
     {
         return $this->type === '' && $this->id === 0;
     }
 
+    /**
+     * Determine if the scope is the same as another one.
+     *
+     * @param  self  $other
+     * @return bool
+     */
     public function equals(self $other): bool
     {
         return $this->type === $other->type && $this->id === $other->id;
     }
 
+    /**
+     * Get the scope as an array.
+     *
+     * @return array
+     */
     public function toArray(): array
     {
         return ['type' => $this->type, 'id' => $this->id];
