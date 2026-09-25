@@ -5,18 +5,18 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Upgrade migration for existing installs:
- *   `terms.owner_type`  →  `terms.scope_type`
- *   `terms.owner_id`    →  `terms.scope_id`
+ * Renames terms.owner_* to terms.scope_* on installs created before 0.2.
  *
- * The conceptual rename clarifies intent: the column tracks the scope of the
- * term catalog (which entity isolates this set of terms), not "ownership" in
- * a creator/permissions sense.
- *
- * Idempotent: skips work if the columns are already renamed (fresh installs
- * created with the post-rename create migration).
+ * Never remove it: apps that published the 0.1 create_terms_table run their own copy,
+ * which still creates owner_*, and rely on this rename. It is idempotent, so installs
+ * that already have scope_* skip it.
  */
 return new class extends Migration {
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
     public function up(): void
     {
         $table = config('laraterms.tables.terms', 'terms');
@@ -45,6 +45,11 @@ return new class extends Migration {
         });
     }
 
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
     public function down(): void
     {
         $table = config('laraterms.tables.terms', 'terms');
