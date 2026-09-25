@@ -93,7 +93,7 @@ trait HasTerms
      */
     public function attachTerms(iterable $terms, ?string $taxonomy = null): Collection
     {
-        $resolved = collect($terms)->map(fn ($t) => $this->resolveTerm($t, $taxonomy, createIfMissing: true));
+        $resolved = Collection::make($terms)->map(fn ($t) => $this->resolveTerm($t, $taxonomy, createIfMissing: true));
         if ($resolved->isEmpty()) return $resolved;
 
         $resolved->groupBy('taxonomy')->each(function (Collection $group, string $tax): void {
@@ -111,7 +111,7 @@ trait HasTerms
      */
     public function syncTerms(iterable $terms, string $taxonomy): Collection
     {
-        $resolved = collect($terms)
+        $resolved = Collection::make($terms)
             ->map(fn ($t) => $this->resolveTerm($t, $taxonomy, createIfMissing: true))
             ->filter(fn (Term $t) => $t->taxonomy === $taxonomy)
             ->values();
