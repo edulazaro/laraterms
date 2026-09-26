@@ -69,6 +69,17 @@ trait HasTerms
     }
 
     /**
+     * Get the model's term in the given taxonomy, for taxonomies that hold one.
+     *
+     * @param  string  $taxonomy
+     * @return Term|null
+     */
+    public function termIn(string $taxonomy): ?Term
+    {
+        return $this->termsIn($taxonomy)->first();
+    }
+
+    /**
      * Determine if the model has any term in the given taxonomy.
      *
      * @param  string  $taxonomy
@@ -146,6 +157,20 @@ trait HasTerms
             Term::find($id)?->refreshCount();
         }
         return $resolved;
+    }
+
+    /**
+     * Leave the given term as the model's only one in the taxonomy, or none when null.
+     *
+     * A term of another taxonomy is ignored, as syncTerms() does, and empties this one.
+     *
+     * @param  Term|int|string|null  $term
+     * @param  string  $taxonomy
+     * @return Term|null
+     */
+    public function syncTerm(Term|int|string|null $term, string $taxonomy): ?Term
+    {
+        return $this->syncTerms($term === null ? [] : [$term], $taxonomy)->first();
     }
 
     /**

@@ -88,12 +88,14 @@ class Post extends Model { use HasTerms; }
 $post->attachTerm('Laravel', 'tags');                  // find-or-create
 $post->attachTerms(['Laravel', 'PHP'], 'tags');
 $post->syncTerms(['Laravel', 'Vue'], 'tags');           // replace in the taxonomy
+$post->syncTerm('Tutorial', 'categories');              // the one term of the taxonomy, null to clear
 $post->detachTerm('Laravel', 'tags');
 $post->detachAll('tags');
 
 // Read
 $post->terms;                                           // all attached
 $post->termsIn('tags');                                 // by taxonomy
+$post->termIn('categories');                            // the one term, or null
 $post->hasTermsIn('tags');                              // bool
 
 // Query
