@@ -8,9 +8,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * detachAll() lee los ids con una query sobre la relación, que hace join con `termables`.
- * La pivot tiene su propio `id`, así que un `pluck('id')` sin calificar es ambiguo en MySQL
- * y en SQLite.
+ * detachAll() reads the ids through a join with termables, which has its own id column.
  */
 class DetachAllTest extends TestCase
 {
@@ -18,7 +16,7 @@ class DetachAllTest extends TestCase
     {
         parent::setUp();
 
-        // Globales: lo que se prueba aquí es la query, no la resolución del scope.
+        // Global, since what is tested here is not scope resolution.
         config([
             'laraterms.taxonomies.tags.scope' => 'global',
             'laraterms.taxonomies.categories.scope' => 'global',

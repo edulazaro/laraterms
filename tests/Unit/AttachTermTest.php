@@ -9,6 +9,9 @@ use EduLazaro\Laraterms\Tests\Support\CreatesPosts;
 use EduLazaro\Laraterms\Tests\Support\Models\Post;
 use EduLazaro\Laraterms\Tests\TestCase;
 
+/**
+ * attachTerm(): resolving, creating and refusing terms.
+ */
 class AttachTermTest extends TestCase
 {
     use CreatesPosts;

@@ -9,7 +9,11 @@ use EduLazaro\Laraterms\Exceptions\UnknownTaxonomyException;
  */
 class TaxonomyRegistry
 {
-    /** @var array<string, TaxonomyDefinition> */
+    /**
+     * The registered taxonomies, keyed by handle.
+     *
+     * @var array<string, TaxonomyDefinition>
+     */
     private array $taxonomies = [];
 
     /**

@@ -8,7 +8,7 @@ use EduLazaro\Laraterms\Tests\Support\Models\Post;
 use EduLazaro\Laraterms\Tests\TestCase;
 
 /**
- * `categories` allows one term per model in the default config.
+ * The max_terms_per_model limit. `categories` allows one in the default config.
  */
 class MaxTermsTest extends TestCase
 {

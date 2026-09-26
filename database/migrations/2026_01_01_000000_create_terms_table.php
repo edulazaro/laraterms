@@ -18,29 +18,25 @@ return new class extends Migration {
             $table->id();
             $table->string('taxonomy', 64)->index();
 
-            // Polimórfico al SCOPE del término (Organization, Team, Case, etc.).
-            // Cada combinación (scope_type, scope_id) es un catálogo aislado.
-            // Sentinela para globales: scope_type='', scope_id=0.
+            // Each (scope_type, scope_id) is an isolated catalog. Global terms use '' and 0,
+            // not null: MySQL treats nulls as distinct and the unique key would let duplicates in.
             $table->string('scope_type', 64)->default('');
             $table->unsignedBigInteger('scope_id')->default(0);
 
             $table->foreignId('parent_id')->nullable()->index();
 
-            // name: plain text. Es el fallback canónico, usado para handle, ORDER BY,
-            // index y debugging SQL trivial. Si name_translations tiene valor para
-            // el locale activo, el accessor lo devuelve en su lugar.
+            // Plain text, so ORDER BY and indexes work without JSON functions. The accessor
+            // prefers name_translations for the current locale.
             $table->string('name');
             $table->json('name_translations')->nullable();
 
-            // Identificador estable, único por scope+taxonomía. Reemplaza al slug.
             $table->string('handle');
 
             $table->text('description')->nullable();
             $table->json('description_translations')->nullable();
 
-            // Concatenación de name + valores de name_translations + description
-            // + valores de description_translations. Auto-mantenido en saving().
-            // Permite búsquedas LIKE agnósticas de idioma con un solo column.
+            // Every name and description in every language, rebuilt on save, so one LIKE
+            // searches them all.
             $table->text('search_text')->nullable();
 
             $table->string('color', 7)->nullable();           // hex #rrggbb
@@ -50,24 +46,18 @@ return new class extends Migration {
             $table->json('meta')->nullable();
             $table->timestamps();
 
-            // Handle único por (scope, taxonomía). Cada despacho tiene su
-            // espacio de handles aislado.
             $table->unique(['scope_type', 'scope_id', 'taxonomy', 'handle'], 'terms_unique');
 
-            // Lookups frecuentes
             $table->index(['scope_type', 'scope_id', 'taxonomy'], 'terms_scope_tax_idx');
             $table->index(['taxonomy', 'parent_id']);
         });
 
-        // FULLTEXT en search_text para búsquedas multi-locale eficientes.
-        // Solo MySQL/Postgres (>=10). Quitar/ajustar si tu motor no lo soporta.
         try {
             Schema::table($terms, function (Blueprint $table) {
                 $table->fullText('search_text', 'terms_search_text_ft');
             });
         } catch (\Throwable $e) {
-            // SQLite u otros sin FULLTEXT: ignoramos. El paquete sigue funcionando
-            // con LIKE sin índice (más lento pero correcto).
+            // Engines without FULLTEXT, such as SQLite, search with an unindexed LIKE.
         }
     }
 

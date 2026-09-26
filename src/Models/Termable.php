@@ -9,8 +9,18 @@ use Illuminate\Database\Eloquent\Relations\MorphPivot;
  */
 class Termable extends MorphPivot
 {
+    /**
+     * Indicates if the IDs are auto-incrementing.
+     *
+     * @var bool
+     */
     public $incrementing = true;
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var list<string>
+     */
     protected $fillable = ['term_id', 'termable_type', 'termable_id', 'sort_order'];
 
     /**

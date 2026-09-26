@@ -9,6 +9,9 @@ use EduLazaro\Laraterms\Tests\Support\Models\Post;
 use EduLazaro\Laraterms\Tests\Support\Models\ScopedPost;
 use EduLazaro\Laraterms\Tests\TestCase;
 
+/**
+ * Which scope a term belongs to, from the model, the global resolver or the taxonomy.
+ */
 class TermScopeResolutionTest extends TestCase
 {
     use CreatesPosts;

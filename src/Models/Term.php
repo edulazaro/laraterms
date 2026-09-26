@@ -35,6 +35,11 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
  */
 class Term extends Model
 {
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var list<string>
+     */
     protected $fillable = [
         'taxonomy', 'scope_type', 'scope_id', 'parent_id',
         'name', 'name_translations',
@@ -44,6 +49,11 @@ class Term extends Model
         'is_active', 'sort_order', 'terms_count', 'meta',
     ];
 
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
     protected $casts = [
         'scope_id'                 => 'integer',
         'parent_id'                => 'integer',
@@ -55,6 +65,11 @@ class Term extends Model
         'meta'                     => 'array',
     ];
 
+    /**
+     * The model's default values, the global scope sentinel.
+     *
+     * @var array<string, mixed>
+     */
     protected $attributes = [
         'scope_type' => '',
         'scope_id'   => 0,
@@ -69,8 +84,6 @@ class Term extends Model
     {
         return config('laraterms.tables.terms', 'terms');
     }
-
-    // ==================== Accessors (i18n-aware) ====================
 
     /**
      * Get the name in the current locale.
@@ -112,14 +125,12 @@ class Term extends Model
                 $fallback = app()->getFallbackLocale();
                 if (!empty($arr[$locale]))   return (string) $arr[$locale];
                 if (!empty($arr[$fallback])) return (string) $arr[$fallback];
-                // Primer valor no vacío como último recurso
+                // Last resort: the first non-empty translation.
                 foreach ($arr as $v) if ($v !== null && $v !== '') return (string) $v;
             }
         }
         return (string) ($this->attributes[$plainCol] ?? '');
     }
-
-    // ==================== Boot ====================
 
     /**
      * Generate the handle and rebuild the search text whenever the term is saved.
@@ -131,7 +142,6 @@ class Term extends Model
         static::saving(function (Term $term): void {
             $def = $term->taxonomyDefinition();
 
-            // Auto-handle si no se proporciona
             if (empty($term->handle) && !empty($term->attributes['name'] ?? '')) {
                 $term->handle = app(HandleGenerator::class)->generate(
                     sourceName: (string) $term->attributes['name'],
@@ -154,7 +164,6 @@ class Term extends Model
             if ($term->scope_type === null) $term->scope_type = '';
             if ($term->scope_id === null)   $term->scope_id = 0;
 
-            // Reconstruir search_text desde todos los valores
             $term->rebuildSearchText();
         });
     }
@@ -202,8 +211,6 @@ class Term extends Model
         }
         return [];
     }
-
-    // ==================== Relations ====================
 
     /**
      * Get the parent term.
@@ -253,8 +260,6 @@ class Term extends Model
             relatedPivotKey: 'termable_id',
         );
     }
-
-    // ==================== Scopes ====================
 
     /**
      * Scope the query to the given taxonomy.
@@ -385,8 +390,6 @@ class Term extends Model
         return $q->where('search_text', 'like', '%' . $term . '%');
     }
 
-    // ==================== Helpers ====================
-
     /**
      * Get the definition of the term's taxonomy.
      *
@@ -504,7 +507,7 @@ class Term extends Model
         $conn = $this->getConnection();
 
         $conn->transaction(function () use ($into, $tableTermables, $conn) {
-            // Mover termables que no creen duplicado en destino
+            // Rows the target already has would break the pivot's unique key.
             $duplicates = $conn->table($tableTermables . ' as src')
                 ->join($tableTermables . ' as dst', function ($join) use ($into) {
                     $join->on('src.termable_type', '=', 'dst.termable_type')
@@ -514,26 +517,22 @@ class Term extends Model
                 ->where('src.term_id', $this->id)
                 ->pluck('src.id');
 
-            // Borra los duplicados (ya están atachados al destino)
             if ($duplicates->isNotEmpty()) {
                 $conn->table($tableTermables)->whereIn('id', $duplicates)->delete();
             }
 
-            // Reasigna el resto al destino
             $conn->table($tableTermables)
                 ->where('term_id', $this->id)
                 ->update(['term_id' => $into->id, 'updated_at' => now()]);
 
-            // Recalc counts del destino
             $into->refreshCount();
 
-            // Origen: desactivar o borrar real
             if ($deactivateSource) {
                 $this->is_active = false;
                 $this->terms_count = 0;
                 $this->saveQuietly();
             } else {
-                $this->delete(); // cascade en termables (los que quedaran)
+                $this->delete();
             }
         });
 

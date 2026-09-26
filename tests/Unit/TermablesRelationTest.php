@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 
+/**
+ * Term::termables(): the models of one type tagged with a term.
+ */
 class TermablesRelationTest extends TestCase
 {
     protected function setUp(): void
@@ -51,7 +54,7 @@ class TermablesRelationTest extends TestCase
         $post = Post::create(['title' => 'Suyo']);
         $post->terms()->attach($term->id);
 
-        // El mismo termino etiquetando otro tipo de modelo
+        // The same term tagging another kind of model.
         DB::table(config('laraterms.tables.termables', 'termables'))->insert([
             'term_id'       => $term->id,
             'termable_type' => 'invoice',

@@ -13,7 +13,11 @@ use Illuminate\Database\Eloquent\Model;
  */
 class LaratermsManager
 {
-    /** @var Closure|null */
+    /**
+     * The callback that resolves the scope of models without their own termsScope().
+     *
+     * @var Closure|null
+     */
     private $scopeResolver = null;
 
     /**

@@ -8,8 +8,7 @@ use EduLazaro\Laraterms\Tests\Support\Models\Post;
 use EduLazaro\Laraterms\Tests\TestCase;
 
 /**
- * termIn() and syncTerm(): the one-term reading and writing of a taxonomy, for those
- * with max_terms_per_model = 1.
+ * termIn() and syncTerm(), for taxonomies that hold one term per model.
  */
 class SingleTermTest extends TestCase
 {

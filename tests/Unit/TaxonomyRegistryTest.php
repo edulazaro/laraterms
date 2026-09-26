@@ -5,6 +5,9 @@ namespace EduLazaro\Laraterms\Tests\Unit;
 use EduLazaro\Laraterms\Facades\Laraterms;
 use EduLazaro\Laraterms\Tests\TestCase;
 
+/**
+ * Taxonomies loaded from config.
+ */
 class TaxonomyRegistryTest extends TestCase
 {
     public function test_registry_loads_taxonomies_from_config(): void

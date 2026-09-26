@@ -52,13 +52,12 @@ class TermTree
     {
         $byParent = $terms->groupBy('parent_id');
 
-        // Attach `children` to each node (in-memory, doesn't hit DB)
+        // In memory: setting the relation avoids a query per node.
         $terms->each(function (Term $term) use ($byParent): void {
             $kids = $byParent->get($term->id, collect());
             $term->setRelation('children', $kids);
         });
 
-        // Roots = terms whose parent_id is null
         return $byParent->get(null, collect())->values();
     }
 

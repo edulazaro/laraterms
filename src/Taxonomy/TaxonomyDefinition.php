@@ -7,7 +7,18 @@ namespace EduLazaro\Laraterms\Taxonomy;
  */
 final class TaxonomyDefinition
 {
+    /**
+     * Each scope keeps its own catalog of terms.
+     *
+     * @var string
+     */
     public const SCOPE_TENANT = 'tenant';
+
+    /**
+     * One catalog shared by every scope.
+     *
+     * @var string
+     */
     public const SCOPE_GLOBAL = 'global';
 
     /**

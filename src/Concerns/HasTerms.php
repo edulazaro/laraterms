@@ -208,8 +208,6 @@ trait HasTerms
         }
     }
 
-    // ==================== Query scopes ====================
-
     /**
      * Scope the query to models that have the given term.
      *
@@ -278,8 +276,6 @@ trait HasTerms
         return $q->whereHas('terms', fn ($qq) => $qq->where(config('laraterms.tables.terms', 'terms') . '.taxonomy', $taxonomy));
     }
 
-    // ==================== Scope resolution ====================
-
     /**
      * Get the scope the model's terms belong to.
      *
@@ -309,8 +305,6 @@ trait HasTerms
         return Scope::from($this->termsScope());
     }
 
-    // ==================== Internals ====================
-
     /**
      * Resolve a term from a model, an id, a handle or a name.
      *
@@ -334,7 +328,7 @@ trait HasTerms
                 ->first();
         }
 
-        // Try handle
+        // By handle first, then by name, ignoring case.
         $hit = Term::query()
             ->where('taxonomy', $taxonomy)
             ->where('scope_type', $scope->type)

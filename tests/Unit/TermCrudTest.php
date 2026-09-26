@@ -5,6 +5,9 @@ namespace EduLazaro\Laraterms\Tests\Unit;
 use EduLazaro\Laraterms\Models\Term;
 use EduLazaro\Laraterms\Tests\TestCase;
 
+/**
+ * Creating terms: handles and search text.
+ */
 class TermCrudTest extends TestCase
 {
     public function test_creating_a_term_auto_generates_handle_from_name(): void

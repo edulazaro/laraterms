@@ -10,9 +10,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * attachTerms() y syncTerms() declaran que devuelven una Eloquent\Collection, y
- * attachTerms() agrupa con un closure tipado con ella. Construidas con collect() eran una
- * Support\Collection y los dos lanzaban TypeError.
+ * attachTerms() returns an Eloquent collection, which it used to declare and not build.
  */
 class AttachTermsTest extends TestCase
 {
@@ -20,7 +18,7 @@ class AttachTermsTest extends TestCase
     {
         parent::setUp();
 
-        // Globales: lo que se prueba aquí es el tipo de colección, no la resolución del scope.
+        // Global, since what is tested here is not scope resolution.
         config([
             'laraterms.taxonomies.tags.scope' => 'global',
             'laraterms.taxonomies.categories.scope' => 'global',

@@ -7,12 +7,32 @@ use EduLazaro\Laraterms\Tests\Support\CreatesPosts;
 use EduLazaro\Laraterms\Tests\Support\Models\Post;
 use EduLazaro\Laraterms\Tests\TestCase;
 
+/**
+ * Reading terms and querying models by them.
+ */
 class TermQueriesTest extends TestCase
 {
     use CreatesPosts;
 
+    /**
+     * Tagged 'Banca'.
+     *
+     * @var Post
+     */
     private Post $banking;
+
+    /**
+     * Tagged 'Banca' and 'Consumo', and categorised 'Civil'.
+     *
+     * @var Post
+     */
     private Post $both;
+
+    /**
+     * Tagged with nothing.
+     *
+     * @var Post
+     */
     private Post $untagged;
 
     protected function setUp(): void

@@ -6,8 +6,17 @@ use EduLazaro\Laraterms\Models\Term;
 use EduLazaro\Laraterms\Support\TermTree;
 use EduLazaro\Laraterms\Tests\TestCase;
 
+/**
+ * TermTree keeps each scope's tree apart.
+ */
 class TermTreeScopeTest extends TestCase
 {
+    /**
+     * Create a term in `categories`.
+     *
+     * @param  array<string, mixed>  $attributes
+     * @return Term
+     */
     private function term(array $attributes): Term
     {
         return Term::create($attributes + ['taxonomy' => 'categories']);

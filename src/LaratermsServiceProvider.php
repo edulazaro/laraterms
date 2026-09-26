@@ -6,6 +6,9 @@ use EduLazaro\Laraterms\Support\HandleGenerator;
 use EduLazaro\Laraterms\Taxonomy\TaxonomyRegistry;
 use Illuminate\Support\ServiceProvider;
 
+/**
+ * Registers the taxonomy registry, the manager and the handle generator.
+ */
 class LaratermsServiceProvider extends ServiceProvider
 {
     /**
@@ -17,7 +20,6 @@ class LaratermsServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__ . '/../config/laraterms.php', 'laraterms');
 
-        // Singleton registry built from config
         $this->app->singleton(TaxonomyRegistry::class, function ($app) {
             return new TaxonomyRegistry(config('laraterms.taxonomies', []));
         });
@@ -26,7 +28,7 @@ class LaratermsServiceProvider extends ServiceProvider
             return new LaratermsManager($app->make(TaxonomyRegistry::class));
         });
 
-        // Handle generator (override via container binding if you need custom strategy)
+        // Bind your own HandleGenerator to change how handles are built.
         $this->app->bind(HandleGenerator::class, function () {
             return new HandleGenerator(
                 locale: config('laraterms.handle.locale', 'en'),

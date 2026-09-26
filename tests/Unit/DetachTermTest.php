@@ -7,6 +7,9 @@ use EduLazaro\Laraterms\Tests\Support\CreatesPosts;
 use EduLazaro\Laraterms\Tests\Support\Models\Post;
 use EduLazaro\Laraterms\Tests\TestCase;
 
+/**
+ * detachTerm(): the ways to name a term, and its count.
+ */
 class DetachTermTest extends TestCase
 {
     use CreatesPosts;

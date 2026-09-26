@@ -7,24 +7,18 @@ return [
     | Taxonomies
     |--------------------------------------------------------------------------
     |
-    | Cada key es un handle de taxonomía (string identifier almacenado en
-    | `terms.taxonomy`). El paquete ships con `tags` y `categories` como
-    | ejemplos — bórralos si no los usas o añade los tuyos.
+    | Each key is a taxonomy handle, stored in `terms.taxonomy`. `tags` and
+    | `categories` are examples: remove them or add your own.
     |
-    | Opciones por taxonomía:
-    |
-    |   label / label_plural   Human labels.
-    |   hierarchical           (bool) Terms pueden tener parent (árbol).
-    |   max_terms_per_model    (int|null) Máx. terms por modelo. Null = unlimited.
-    |   required               (bool) Hint de validación.
-    |   sort                   'name' | 'sort_order' | 'created_at'.
-    |   models                 (array|null) Restringe qué modelos usan esta
-    |                          taxonomía. Null = cualquier modelo con HasTerms.
-    |
-    |   scope                  'tenant' (default) | 'global'.
-    |                          - tenant: cada scope tiene sus propios terms.
-    |                          - global: terms del sistema (scope_type='', scope_id=0).
-    |   scope_model            FQCN del modelo Scope cuando scope=tenant (hint).
+    |   label, label_plural    Human names.
+    |   hierarchical           Whether terms can have a parent.
+    |   max_terms_per_model    Terms a model may hold in it; null for no limit.
+    |   required               Validation hint for your forms.
+    |   sort                   'name', 'sort_order' or 'created_at'.
+    |   models                 Model classes allowed to use it; null for any.
+    |   scope                  'tenant' (default): each scope has its own terms.
+    |                          'global': one catalog shared by every scope.
+    |   scope_model            The scope model class, as a hint, for tenant ones.
     |
     */
 
@@ -60,6 +54,9 @@ return [
     |--------------------------------------------------------------------------
     | Tables
     |--------------------------------------------------------------------------
+    |
+    | Rename them before running the migrations if they clash with yours.
+    |
     */
 
     'tables' => [
@@ -72,9 +69,8 @@ return [
     | Handle
     |--------------------------------------------------------------------------
     |
-    | El `handle` es el identificador estable del término (lo que antes era el
-    | "slug"). Se genera automáticamente a partir del `name` plain al guardar
-    | si no se proporciona. Único por (scope_type, scope_id, taxonomy).
+    | The stable identifier of a term, generated from its name when it is saved
+    | without one. Unique within its taxonomy and scope.
     |
     */
 
@@ -88,6 +84,9 @@ return [
     |--------------------------------------------------------------------------
     | Counts cache
     |--------------------------------------------------------------------------
+    |
+    | Keep `terms.terms_count` updated as models are tagged and untagged.
+    |
     */
 
     'cache_counts' => true,

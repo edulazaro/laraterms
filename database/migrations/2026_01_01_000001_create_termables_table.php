@@ -22,9 +22,7 @@ return new class extends Migration {
             $table->unsignedInteger('sort_order')->default(0);
             $table->timestamps();
 
-            // A model cannot be attached twice to the same term
             $table->unique(['term_id', 'termable_type', 'termable_id'], 'termables_unique');
-            // Reverse lookup: "give me all terms for this model"
             $table->index(['termable_type', 'termable_id'], 'termables_morph_idx');
         });
     }

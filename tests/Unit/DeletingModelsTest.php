@@ -8,6 +8,9 @@ use EduLazaro\Laraterms\Tests\Support\Models\SoftPost;
 use EduLazaro\Laraterms\Tests\TestCase;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * What happens to a model's terms when it is deleted.
+ */
 class DeletingModelsTest extends TestCase
 {
     use CreatesPosts;
